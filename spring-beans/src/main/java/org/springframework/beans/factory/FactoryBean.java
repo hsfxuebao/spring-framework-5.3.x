@@ -142,6 +142,7 @@ public interface FactoryBean<T> {
 	 * @see #getObject()
 	 * @see SmartFactoryBean#isPrototype()
 	 */
+	// 是否是单实例
 	default boolean isSingleton() {
 		return true;
 	}

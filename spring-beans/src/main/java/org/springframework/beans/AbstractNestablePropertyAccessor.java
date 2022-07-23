@@ -232,10 +232,12 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 		return getRootInstance().getClass();
 	}
 
+	// 利用属性进行属性赋值的办法 PropertyValue
 	@Override
 	public void setPropertyValue(String propertyName, @Nullable Object value) throws BeansException {
 		AbstractNestablePropertyAccessor nestedPa;
 		try {
+			// 级联属性的赋值都没问题
 			nestedPa = getPropertyAccessorForPropertyPath(propertyName);
 		}
 		catch (NotReadablePropertyException ex) {
@@ -243,6 +245,7 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 					"Nested property in path '" + propertyName + "' does not exist", ex);
 		}
 		PropertyTokenHolder tokens = getPropertyNameTokens(getFinalPath(nestedPa, propertyName));
+
 		nestedPa.setPropertyValue(tokens, new PropertyValue(propertyName, value));
 	}
 
@@ -253,6 +256,7 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 			String propertyName = pv.getName();
 			AbstractNestablePropertyAccessor nestedPa;
 			try {
+				// 级联属性的赋值都没问题
 				nestedPa = getPropertyAccessorForPropertyPath(propertyName);
 			}
 			catch (NotReadablePropertyException ex) {
@@ -266,6 +270,7 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 			nestedPa.setPropertyValue(tokens, pv);
 		}
 		else {
+			// todo
 			setPropertyValue(tokens, pv);
 		}
 	}
@@ -275,6 +280,7 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 			processKeyedProperty(tokens, pv);
 		}
 		else {
+			// todo
 			processLocalProperty(tokens, pv);
 		}
 	}
@@ -460,6 +466,7 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 				}
 				pv.getOriginalPropertyValue().conversionNecessary = (valueToApply != originalValue);
 			}
+			// todo
 			ph.setValue(valueToApply);
 		}
 		catch (TypeMismatchException ex) {

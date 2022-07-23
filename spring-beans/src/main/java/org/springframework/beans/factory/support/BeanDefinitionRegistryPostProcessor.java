@@ -29,6 +29,7 @@ import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
  * @author Juergen Hoeller
  * @since 3.0.1
  * @see org.springframework.context.annotation.ConfigurationClassPostProcessor
+ * 对BeanDefinitionRegistry  进行后置增强
  */
 public interface BeanDefinitionRegistryPostProcessor extends BeanFactoryPostProcessor {
 

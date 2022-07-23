@@ -92,6 +92,7 @@ public final class ExposeInvocationInterceptor implements MethodInterceptor, Pri
 	@Nullable
 	public Object invoke(MethodInvocation mi) throws Throwable {
 		MethodInvocation oldInvocation = invocation.get();
+		// 把当前对象（什么都封装的cglibAopProxy对象）放到ThreadLocal中进行线程共享
 		invocation.set(mi);
 		try {
 			return mi.proceed();

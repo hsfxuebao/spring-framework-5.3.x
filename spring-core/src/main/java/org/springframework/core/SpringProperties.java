@@ -51,6 +51,7 @@ import org.springframework.lang.Nullable;
  */
 public final class SpringProperties {
 
+	//
 	private static final String PROPERTIES_RESOURCE_LOCATION = "spring.properties";
 
 	private static final Properties localProperties = new Properties();
@@ -63,6 +64,7 @@ public final class SpringProperties {
 					ClassLoader.getSystemResource(PROPERTIES_RESOURCE_LOCATION));
 			if (url != null) {
 				try (InputStream is = url.openStream()) {
+					// 读取spring的默认配置 在spring.properties
 					localProperties.load(is);
 				}
 			}

@@ -206,6 +206,7 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 
 	/**
 	 * Create a new AbstractBeanDefinition with default settings.
+	 * 只要有任何组件需要注册到beanFactory 中，必须得有bean的定义信息
 	 */
 	protected AbstractBeanDefinition() {
 		this(null, null);

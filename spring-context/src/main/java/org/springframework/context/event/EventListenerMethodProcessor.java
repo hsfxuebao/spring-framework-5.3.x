@@ -110,6 +110,7 @@ public class EventListenerMethodProcessor
 	public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) {
 		this.beanFactory = beanFactory;
 
+		// 拿到所有的EventListenerFactory，排好序
 		Map<String, EventListenerFactory> beans = beanFactory.getBeansOfType(EventListenerFactory.class, false, false);
 		List<EventListenerFactory> factories = new ArrayList<>(beans.values());
 		AnnotationAwareOrderComparator.sort(factories);
@@ -121,6 +122,7 @@ public class EventListenerMethodProcessor
 	public void afterSingletonsInstantiated() {
 		ConfigurableListableBeanFactory beanFactory = this.beanFactory;
 		Assert.state(this.beanFactory != null, "No ConfigurableListableBeanFactory set");
+		// 拿到容器中的所有组件
 		String[] beanNames = beanFactory.getBeanNamesForType(Object.class);
 		for (String beanName : beanNames) {
 			if (!ScopedProxyUtils.isScopedTarget(beanName)) {
@@ -151,6 +153,7 @@ public class EventListenerMethodProcessor
 						}
 					}
 					try {
+						// todo
 						processBean(beanName, type);
 					}
 					catch (Throwable ex) {
@@ -163,12 +166,15 @@ public class EventListenerMethodProcessor
 	}
 
 	private void processBean(final String beanName, final Class<?> targetType) {
+
+
 		if (!this.nonAnnotatedClasses.contains(targetType) &&
 				AnnotationUtils.isCandidateClass(targetType, EventListener.class) &&
 				!isSpringContainerClass(targetType)) {
 
 			Map<Method, EventListener> annotatedMethods = null;
 			try {
+				// 找到这个组件所有@EventListener 标注的方法
 				annotatedMethods = MethodIntrospector.selectMethods(targetType,
 						(MethodIntrospector.MetadataLookup<EventListener>) method ->
 								AnnotatedElementUtils.findMergedAnnotation(method, EventListener.class));
@@ -192,15 +198,19 @@ public class EventListenerMethodProcessor
 				Assert.state(context != null, "No ApplicationContext set");
 				List<EventListenerFactory> factories = this.eventListenerFactories;
 				Assert.state(factories != null, "EventListenerFactory List not initialized");
+				// 遍历每一个方法
 				for (Method method : annotatedMethods.keySet()) {
+					// 拿到默认的EventListenerFactory
 					for (EventListenerFactory factory : factories) {
 						if (factory.supportsMethod(method)) {
 							Method methodToUse = AopUtils.selectInvocableMethod(method, context.getType(beanName));
+							// 把当前方法，beanName等封装到适配器中ApplicationListenerMethodAdapter
 							ApplicationListener<?> applicationListener =
 									factory.createApplicationListener(beanName, targetType, methodToUse);
 							if (applicationListener instanceof ApplicationListenerMethodAdapter) {
 								((ApplicationListenerMethodAdapter) applicationListener).init(context, this.evaluator);
 							}
+							// 放到容器中和事件多播器中
 							context.addApplicationListener(applicationListener);
 							break;
 						}

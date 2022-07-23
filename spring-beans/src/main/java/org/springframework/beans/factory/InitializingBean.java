@@ -30,6 +30,7 @@ package org.springframework.beans.factory;
  * @see DisposableBean
  * @see org.springframework.beans.factory.config.BeanDefinition#getPropertyValues()
  * @see org.springframework.beans.factory.support.AbstractBeanDefinition#getInitMethodName()
+ * Bean组件初始化以后对组件进行后续设置
  */
 public interface InitializingBean {
 

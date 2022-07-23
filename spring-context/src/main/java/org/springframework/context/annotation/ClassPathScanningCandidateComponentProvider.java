@@ -310,9 +310,11 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 	 */
 	public Set<BeanDefinition> findCandidateComponents(String basePackage) {
 		if (this.componentsIndex != null && indexSupportsIncludeFilters()) {
+			// todo 扫描所有组件
 			return addCandidateComponentsFromIndex(this.componentsIndex, basePackage);
 		}
 		else {
+
 			return scanCandidateComponents(basePackage);
 		}
 	}
@@ -384,7 +386,9 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 			boolean traceEnabled = logger.isTraceEnabled();
 			boolean debugEnabled = logger.isDebugEnabled();
 			for (String type : types) {
+				// 生成每一个资源的元数据信息
 				MetadataReader metadataReader = getMetadataReaderFactory().getMetadataReader(type);
+				// 如果当前类在扫描范围
 				if (isCandidateComponent(metadataReader)) {
 					ScannedGenericBeanDefinition sbd = new ScannedGenericBeanDefinition(metadataReader);
 					sbd.setSource(metadataReader.getResource());
@@ -392,6 +396,7 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 						if (debugEnabled) {
 							logger.debug("Using candidate component class from index: " + type);
 						}
+						// todo
 						candidates.add(sbd);
 					}
 					else {

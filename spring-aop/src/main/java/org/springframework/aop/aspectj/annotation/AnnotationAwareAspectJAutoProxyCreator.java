@@ -75,10 +75,11 @@ public class AnnotationAwareAspectJAutoProxyCreator extends AspectJAwareAdvisorA
 		this.aspectJAdvisorFactory = aspectJAdvisorFactory;
 	}
 
-	@Override
+	@Override // BeanFactoryAware 来的 当前后置处理器创建对象的时候回调的
 	protected void initBeanFactory(ConfigurableListableBeanFactory beanFactory) {
 		super.initBeanFactory(beanFactory);
 		if (this.aspectJAdvisorFactory == null) {
+			// 准备一个ReflectiveAspectJAdvisorFactory
 			this.aspectJAdvisorFactory = new ReflectiveAspectJAdvisorFactory(beanFactory);
 		}
 		this.aspectJAdvisorsBuilder =
@@ -86,11 +87,14 @@ public class AnnotationAwareAspectJAutoProxyCreator extends AspectJAwareAdvisorA
 	}
 
 
+	// 找到候选的增强器
 	@Override
 	protected List<Advisor> findCandidateAdvisors() {
 		// Add all the Spring advisors found according to superclass rules.
+		// 判断这个bean是否需要增强，只需要找到他的所有增强器
 		List<Advisor> advisors = super.findCandidateAdvisors();
 		// Build Advisors for all AspectJ aspects in the bean factory.
+		// 增强器的构建器只要有
 		if (this.aspectJAdvisorsBuilder != null) {
 			advisors.addAll(this.aspectJAdvisorsBuilder.buildAspectJAdvisors());
 		}
@@ -108,6 +112,7 @@ public class AnnotationAwareAspectJAutoProxyCreator extends AspectJAwareAdvisorA
 		// defined on the interface. We could potentially relax the restriction about
 		// not advising aspects in the future.
 		return (super.isInfrastructureClass(beanClass) ||
+				// 判断当前类是否有@Aspect 注解
 				(this.aspectJAdvisorFactory != null && this.aspectJAdvisorFactory.isAspect(beanClass)));
 	}
 

@@ -131,10 +131,12 @@ public class SimpleApplicationEventMulticaster extends AbstractApplicationEventM
 		multicastEvent(event, resolveDefaultEventType(event));
 	}
 
+	// 事件派发 可以是异步的
 	@Override
 	public void multicastEvent(final ApplicationEvent event, @Nullable ResolvableType eventType) {
 		ResolvableType type = (eventType != null ? eventType : resolveDefaultEventType(event));
 		Executor executor = getTaskExecutor();
+		// 观察者模式，把所有事件监听器拿来，调用他们的onApplicationEvent()即可
 		for (ApplicationListener<?> listener : getApplicationListeners(event, type)) {
 			if (executor != null) {
 				executor.execute(() -> invokeListener(listener, event));
@@ -159,6 +161,7 @@ public class SimpleApplicationEventMulticaster extends AbstractApplicationEventM
 		ErrorHandler errorHandler = getErrorHandler();
 		if (errorHandler != null) {
 			try {
+				//
 				doInvokeListener(listener, event);
 			}
 			catch (Throwable err) {

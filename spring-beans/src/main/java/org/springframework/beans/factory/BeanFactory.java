@@ -31,8 +31,8 @@ import org.springframework.lang.Nullable;
  * <p>This interface is implemented by objects that hold a number of bean definitions,
  * each uniquely identified by a String name. Depending on the bean definition,
  * the factory will return either an independent instance of a contained object
- * (the Prototype design pattern), or a single shared instance (a superior
- * alternative to the Singleton design pattern, in which the instance is a
+ * (the Prototype design pattern 原型模式), or a single shared instance (a superior
+ * alternative to the Singleton design pattern 单例设计模式, in which the instance is a
  * singleton in the scope of the factory). Which type of instance will be returned
  * depends on the bean factory configuration: the API is the same. Since Spring
  * 2.0, further scopes are available depending on the concrete application
@@ -117,6 +117,7 @@ import org.springframework.lang.Nullable;
  * @see DisposableBean#destroy
  * @see org.springframework.beans.factory.support.RootBeanDefinition#getDestroyMethodName
  */
+// 跟接口，整个访问容器的入口；保存很多的BeanDefinition 信息，都有一个唯一的名字
 public interface BeanFactory {
 
 	/**

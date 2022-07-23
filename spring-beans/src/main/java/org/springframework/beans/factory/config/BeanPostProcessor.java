@@ -54,6 +54,7 @@ import org.springframework.lang.Nullable;
  * @see DestructionAwareBeanPostProcessor
  * @see ConfigurableBeanFactory#addBeanPostProcessor
  * @see BeanFactoryPostProcessor
+ * 对Bean 进行后置增强，
  */
 public interface BeanPostProcessor {
 
