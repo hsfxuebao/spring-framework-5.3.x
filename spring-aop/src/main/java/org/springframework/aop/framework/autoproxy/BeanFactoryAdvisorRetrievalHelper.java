@@ -66,21 +66,28 @@ public class BeanFactoryAdvisorRetrievalHelper {
 	 */
 	public List<Advisor> findAdvisorBeans() {
 		// Determine list of advisor bean names, if not cached already.
+		// 从缓存中获取 advisorNames。因为每个Bean创建的时候都会进行一次获取，所以对增强的缓存是必须的
 		String[] advisorNames = this.cachedAdvisorBeanNames;
 		if (advisorNames == null) {
 			// Do not initialize FactoryBeans here: We need to leave all regular beans
 			// uninitialized to let the auto-proxy creator apply to them!
+			// 注释： 不要在这里初始化FactoryBeans：我们需要保留所有未初始化的常规bean，以使自动代理创建者对其应用！  个人理解是防止有的FactoryBean可能会被增强代理，而在这里初始化，则会没有办法进行代理
+			// 从 Spring 中获取 Advisor 类型的 beanname 。这里获取到的一般都是硬编码注入的 Advisors
 			advisorNames = BeanFactoryUtils.beanNamesForTypeIncludingAncestors(
 					this.beanFactory, Advisor.class, true, false);
 			this.cachedAdvisorBeanNames = advisorNames;
 		}
+		// 如果没有获取到 Advisors  ，直接返回
 		if (advisorNames.length == 0) {
 			return new ArrayList<>();
 		}
 
+		// 到这一步必定有Advisors ，我们需要通过name来获取到bean的实例
 		List<Advisor> advisors = new ArrayList<>();
 		for (String name : advisorNames) {
+			// 当前Bean 是否合格，这里调用的是 AbstractAdvisorAutoProxyCreator#isEligibleAdvisorBean 直接返回true，供子类扩展。
 			if (isEligibleBean(name)) {
+				// 如果 name 指向的 bean 正在创建中则跳过
 				if (this.beanFactory.isCurrentlyInCreation(name)) {
 					if (logger.isTraceEnabled()) {
 						logger.trace("Skipping currently created advisor '" + name + "'");
@@ -88,10 +95,12 @@ public class BeanFactoryAdvisorRetrievalHelper {
 				}
 				else {
 					try {
+						// 否则从容器中根据name 和 类型获取到 Advisor 实例，添加到 advisors 集合中
 						advisors.add(this.beanFactory.getBean(name, Advisor.class));
 					}
 					catch (BeanCreationException ex) {
 						Throwable rootCause = ex.getMostSpecificCause();
+						// 如果是异常时因为bean正在创建引起的在，则 continue
 						if (rootCause instanceof BeanCurrentlyInCreationException) {
 							BeanCreationException bce = (BeanCreationException) rootCause;
 							String bceBeanName = bce.getBeanName();
@@ -110,6 +119,7 @@ public class BeanFactoryAdvisorRetrievalHelper {
 				}
 			}
 		}
+		// 返回得到的合格的 Advisor 集合
 		return advisors;
 	}
 

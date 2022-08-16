@@ -11,6 +11,8 @@ repositories {
 
 dependencies {
     api(project(":spring-context"))
+    api(project(":spring-aspects"))  //引入aop&切面模块
+//    compile(project(":spring-jdbc")) //引入事务
 
     // https://mvnrepository.com/artifact/org.projectlombok/lombok
     compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.14'

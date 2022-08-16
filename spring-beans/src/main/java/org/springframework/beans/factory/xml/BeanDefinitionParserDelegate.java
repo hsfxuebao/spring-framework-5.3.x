@@ -412,15 +412,19 @@ public class BeanDefinitionParserDelegate {
 	 */
 	@Nullable
 	public BeanDefinitionHolder parseBeanDefinitionElement(Element ele, @Nullable BeanDefinition containingBean) {
+		//获取bean标签内的id
 		String id = ele.getAttribute(ID_ATTRIBUTE);
+		//获取bean标签内的name
 		String nameAttr = ele.getAttribute(NAME_ATTRIBUTE);
 
+		//获取bean标签内的别名
 		List<String> aliases = new ArrayList<>();
 		if (StringUtils.hasLength(nameAttr)) {
 			String[] nameArr = StringUtils.tokenizeToStringArray(nameAttr, MULTI_VALUE_ATTRIBUTE_DELIMITERS);
 			aliases.addAll(Arrays.asList(nameArr));
 		}
 
+		//将id赋给beanName
 		String beanName = id;
 		if (!StringUtils.hasText(beanName) && !aliases.isEmpty()) {
 			beanName = aliases.remove(0);
@@ -430,10 +434,12 @@ public class BeanDefinitionParserDelegate {
 			}
 		}
 
+		//检查beanName是否重复
 		if (containingBean == null) {
 			checkNameUniqueness(beanName, aliases, ele);
 		}
 
+		// todo 解析bean，返回beanDefinition对象
 		AbstractBeanDefinition beanDefinition = parseBeanDefinitionElement(ele, beanName, containingBean);
 		if (beanDefinition != null) {
 			if (!StringUtils.hasText(beanName)) {
@@ -465,6 +471,7 @@ public class BeanDefinitionParserDelegate {
 				}
 			}
 			String[] aliasesArray = StringUtils.toStringArray(aliases);
+			// 将beanDefinition封装成BeanDefinitionHolder返回
 			return new BeanDefinitionHolder(beanDefinition, beanName, aliasesArray);
 		}
 
@@ -512,23 +519,32 @@ public class BeanDefinitionParserDelegate {
 		}
 
 		try {
-			AbstractBeanDefinition bd = createBeanDefinition(className, parent);
 
+			//创建GenericBeanDefinition对象
+			AbstractBeanDefinition bd = createBeanDefinition(className, parent);
 			// 以下是解析Bean标签里面的数据，填充完BeanDefinition
+
+			// 解析bean标签的属性，并把解析出来的属性设置到BeanDefinition对象中
 			parseBeanDefinitionAttributes(ele, beanName, containingBean, bd);
 			bd.setDescription(DomUtils.getChildElementValueByTagName(ele, DESCRIPTION_ELEMENT));
 
+			//解析bean中的meta标签
 			parseMetaElements(ele, bd);
+			//解析bean中的lookup-method标签  重要程度：2
 			parseLookupOverrideSubElements(ele, bd.getMethodOverrides());
+			//解析bean中的replaced-method标签  重要程度：2
 			parseReplacedMethodSubElements(ele, bd.getMethodOverrides());
 
+			//解析bean中的constructor-arg标签  重要程度：2
 			parseConstructorArgElements(ele, bd);
+			//解析bean中的property标签  重要程度：2
 			parsePropertyElements(ele, bd);
 			parseQualifierElements(ele, bd);
 
 			bd.setResource(this.readerContext.getResource());
 			bd.setSource(extractSource(ele));
 
+			//包装成beanDefinition对象返回
 			return bd;
 		}
 		catch (ClassNotFoundException ex) {
@@ -1389,6 +1405,7 @@ public class BeanDefinitionParserDelegate {
 			error("Unable to locate Spring NamespaceHandler for XML schema namespace [" + namespaceUri + "]", ele);
 			return null;
 		}
+		// todo
 		return handler.parse(ele, new ParserContext(this.readerContext, this, containingBd));
 	}
 
@@ -1414,6 +1431,7 @@ public class BeanDefinitionParserDelegate {
 
 		BeanDefinitionHolder finalDefinition = originalDef;
 
+		//根据bean标签属性装饰BeanDefinitionHolder，比如<bean class="xx" p:username="fisher"/>
 		// Decorate based on custom attributes first.
 		NamedNodeMap attributes = ele.getAttributes();
 		for (int i = 0; i < attributes.getLength(); i++) {
@@ -1422,10 +1440,12 @@ public class BeanDefinitionParserDelegate {
 		}
 
 		// Decorate based on custom nested elements.
+		// 根据bean标签子元素装饰BeanDefinitionHolder
 		NodeList children = ele.getChildNodes();
 		for (int i = 0; i < children.getLength(); i++) {
 			Node node = children.item(i);
 			if (node.getNodeType() == Node.ELEMENT_NODE) {
+				// todo
 				finalDefinition = decorateIfRequired(node, finalDefinition, containingBd);
 			}
 		}
@@ -1443,10 +1463,14 @@ public class BeanDefinitionParserDelegate {
 	public BeanDefinitionHolder decorateIfRequired(
 			Node node, BeanDefinitionHolder originalDef, @Nullable BeanDefinition containingBd) {
 
+		// 根据node获取到node的命名空间，形如：http://www.springframework.org/schema/p
 		String namespaceUri = getNamespaceURI(node);
 		if (namespaceUri != null && !isDefaultNamespace(namespaceUri)) {
+			// todo 这里有SPI服务发现的思想，根据配置文件获取namespaceUri对应的处理类
 			NamespaceHandler handler = this.readerContext.getNamespaceHandlerResolver().resolve(namespaceUri);
 			if (handler != null) {
+				//调用NamespaceHandler处理类的decorate方法，开始具体装饰过程，并返回装饰完的对象
+				//org.springframework.beans.factory.xml.SimplePropertyNamespaceHandler
 				BeanDefinitionHolder decorated =
 						handler.decorate(node, originalDef, new ParserContext(this.readerContext, this, containingBd));
 				if (decorated != null) {

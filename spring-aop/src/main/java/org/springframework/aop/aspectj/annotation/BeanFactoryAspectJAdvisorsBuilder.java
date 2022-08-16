@@ -81,34 +81,45 @@ public class BeanFactoryAspectJAdvisorsBuilder {
 	 * @see #isEligibleBean
 	 */
 	public List<Advisor> buildAspectJAdvisors() {
+		// aspectBeanNames 中缓存了被 @Aspect 修饰的 bean的name
 		List<String> aspectNames = this.aspectBeanNames;
-
+		// 如果为空表示尚未缓存，进行缓存解析。这里用了DLC 方式来进行判断
 		if (aspectNames == null) {
 			synchronized (this) {
 				aspectNames = this.aspectBeanNames;
 				if (aspectNames == null) {
 					List<Advisor> advisors = new ArrayList<>();
 					aspectNames = new ArrayList<>();
+					// 1. 获取所有的beanName。从容器中获取所有的BeanName
 					String[] beanNames = BeanFactoryUtils.beanNamesForTypeIncludingAncestors(
 							this.beanFactory, Object.class, true, false);
+					// 遍历beanname, 找出对应的增强方法
 					for (String beanName : beanNames) {
+						// 不合法的bean略过，由子类定义规则，默认true
 						if (!isEligibleBean(beanName)) {
 							continue;
 						}
+						// 注释 ：我们必须小心，不要急于实例化bean，因为在这种情况下，它们将由Spring容器缓存，但不会被编织。
 						// We must be careful not to instantiate beans eagerly as in this case they
 						// would be cached by the Spring container but would not have been weaved.
+						// 获取对应 bean 的类型
 						Class<?> beanType = this.beanFactory.getType(beanName, false);
 						if (beanType == null) {
 							continue;
 						}
+						// 2. 如果bean 被 @AspectJ 注解修饰 且不是Ajc 编译, 则进一步处理
 						// 每一个组件都会判断是否是切面，如果是就放到这个集合中
 						if (this.advisorFactory.isAspect(beanType)) {
+							// 添加到缓存中
 							aspectNames.add(beanName);
+							// 封装成AspectMetadata
 							AspectMetadata amd = new AspectMetadata(beanType, beanName);
+							// aspect 存在 SINGLETON、PERTHIS、PERTARGET、PERCFLOW、PERCFLOWBELOW、PERTYPEWITHIN模式。默认为SINGLETON 。暂不明白意义
 							if (amd.getAjType().getPerClause().getKind() == PerClauseKind.SINGLETON) {
 								MetadataAwareAspectInstanceFactory factory =
 										new BeanFactoryAspectInstanceFactory(this.beanFactory, beanName);
-								// 获取增强器
+								// 3. 解析标记AspectJ注解中的增强方法，也就是被 @Before、@Around 等注解修饰的方法，并将其封装成 Advisor
+								// todo
 								List<Advisor> classAdvisors = this.advisorFactory.getAdvisors(factory);
 								if (this.beanFactory.isSingleton(beanName)) {
 									this.advisorsCache.put(beanName, classAdvisors);
@@ -116,10 +127,12 @@ public class BeanFactoryAspectJAdvisorsBuilder {
 								else {
 									this.aspectFactoryCache.put(beanName, factory);
 								}
+								// 保存 Advisor
 								advisors.addAll(classAdvisors);
 							}
 							else {
 								// Per target or per this.
+								// 如果当前Bean是单例，但是 Aspect 不是单例则抛出异常
 								if (this.beanFactory.isSingleton(beanName)) {
 									throw new IllegalArgumentException("Bean with name '" + beanName +
 											"' is a singleton, but aspect instantiation model is not singleton");
@@ -141,6 +154,7 @@ public class BeanFactoryAspectJAdvisorsBuilder {
 			return Collections.emptyList();
 		}
 		List<Advisor> advisors = new ArrayList<>();
+		// 4. 将所有的增强方法保存到缓存中。
 		// 遍历所有切面找增强器
 		for (String aspectName : aspectNames) {
 			List<Advisor> cachedAdvisors = this.advisorsCache.get(aspectName);

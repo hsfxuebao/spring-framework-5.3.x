@@ -211,11 +211,15 @@ final class ConfigurationClass {
 
 	void validate(ProblemReporter problemReporter) {
 		// A configuration class may not be final (CGLIB limitation) unless it declares proxyBeanMethods=false
+		// 获取 @Configuration 注解的属性信息
 		Map<String, Object> attributes = this.metadata.getAnnotationAttributes(Configuration.class.getName());
+		// 如果 @Configuration 存在(attributes != null)  && attributes.get("proxyBeanMethods") == true 才进行进一步的校验
 		if (attributes != null && (Boolean) attributes.get("proxyBeanMethods")) {
+			// 如果配置类 是  final 修饰，即终态类，则是错误，因为无法动态代理
 			if (this.metadata.isFinal()) {
 				problemReporter.error(new FinalConfigurationProblem());
 			}
+			// 对配置类中的 @Bean 注解修饰的方法进行校验
 			for (BeanMethod beanMethod : this.beanMethods) {
 				beanMethod.validate(problemReporter);
 			}

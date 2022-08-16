@@ -64,6 +64,7 @@ abstract class ConfigurationClassUtils {
 
 	private static final Log logger = LogFactory.getLog(ConfigurationClassUtils.class);
 
+	// candidateIndicators  的定义
 	private static final Set<String> candidateIndicators = new HashSet<>(8);
 
 	static {
@@ -84,13 +85,15 @@ abstract class ConfigurationClassUtils {
 	 */
 	public static boolean checkConfigurationClassCandidate(
 			BeanDefinition beanDef, MetadataReaderFactory metadataReaderFactory) {
-
+		// 获取className
 		String className = beanDef.getBeanClassName();
 		if (className == null || beanDef.getFactoryMethodName() != null) {
 			return false;
 		}
 
+		// 解析关于当前被解析类的 注解元数据
 		AnnotationMetadata metadata;
+		// 如果当前BeanDefinition  是 AnnotatedBeanDefinition(相较于一般的 BeanDefinition，他多了一些注解信息的解析) 类型。直接获取注解元数据即可
 		if (beanDef instanceof AnnotatedBeanDefinition &&
 				className.equals(((AnnotatedBeanDefinition) beanDef).getMetadata().getClassName())) {
 			// Can reuse the pre-parsed metadata from the given BeanDefinition...
@@ -100,16 +103,20 @@ abstract class ConfigurationClassUtils {
 			// Check already loaded Class if present...
 			// since we possibly can't even load the class file for this Class.
 			Class<?> beanClass = ((AbstractBeanDefinition) beanDef).getBeanClass();
+			// 如果当前类是 BeanFactoryPostProcessor、BeanPostProcessor、AopInfrastructureBean、
+			// EventListenerFactory 类型不当做配置类处理，返回false
 			if (BeanFactoryPostProcessor.class.isAssignableFrom(beanClass) ||
 					BeanPostProcessor.class.isAssignableFrom(beanClass) ||
 					AopInfrastructureBean.class.isAssignableFrom(beanClass) ||
 					EventListenerFactory.class.isAssignableFrom(beanClass)) {
 				return false;
 			}
+			// 获取数据
 			metadata = AnnotationMetadata.introspect(beanClass);
 		}
 		else {
 			try {
+				// 按照默认规则解析
 				MetadataReader metadataReader = metadataReaderFactory.getMetadataReader(className);
 				metadata = metadataReader.getAnnotationMetadata();
 			}
@@ -122,11 +129,17 @@ abstract class ConfigurationClassUtils {
 			}
 		}
 
+		// 获取bean上的Configuration 注解的属性。如果没有被 @Configuration 修饰 config 则为null
 		Map<String, Object> config = metadata.getAnnotationAttributes(Configuration.class.getName());
+		// 如果被 @Configuration 修饰 &&  proxyBeanMethods 属性为 true。 @Configuration 的 proxyBeanMethods
 		if (config != null && !Boolean.FALSE.equals(config.get("proxyBeanMethods"))) {
+			// 设置 CONFIGURATION_CLASS_ATTRIBUTE 为 full
 			beanDef.setAttribute(CONFIGURATION_CLASS_ATTRIBUTE, CONFIGURATION_CLASS_FULL);
 		}
+		// 如果被 @Configuration 修饰 &&  isConfigurationCandidate(metadata) = true
+		// todo 关于  isConfigurationCandidate(metadata) 的解析在下面
 		else if (config != null || isConfigurationCandidate(metadata)) {
+			// 设置 CONFIGURATION_CLASS_ATTRIBUTE 为 lite
 			beanDef.setAttribute(CONFIGURATION_CLASS_ATTRIBUTE, CONFIGURATION_CLASS_LITE);
 		}
 		else {
@@ -134,6 +147,7 @@ abstract class ConfigurationClassUtils {
 		}
 
 		// It's a full or lite configuration candidate... Let's determine the order value, if any.
+		// 按照@Order 注解排序
 		Integer order = getOrder(metadata);
 		if (order != null) {
 			beanDef.setAttribute(ORDER_ATTRIBUTE, order);
@@ -156,6 +170,7 @@ abstract class ConfigurationClassUtils {
 		}
 
 		// Any of the typical annotations found?
+		// 被 candidateIndicators 中的注解修饰。其中 candidateIndicators  注解在静态代码块中加载了
 		for (String indicator : candidateIndicators) {
 			if (metadata.isAnnotated(indicator)) {
 				return true;
@@ -163,6 +178,7 @@ abstract class ConfigurationClassUtils {
 		}
 
 		// Finally, let's look for @Bean methods...
+		// 类中包含被 @Bean 注解修饰的方法
 		return hasBeanMethods(metadata);
 	}
 

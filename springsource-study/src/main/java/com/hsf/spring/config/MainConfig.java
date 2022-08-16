@@ -8,6 +8,7 @@ import org.springframework.beans.factory.support.RootBeanDefinition;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.ImportBeanDefinitionRegistrar;
 import org.springframework.core.type.AnnotationMetadata;
@@ -23,6 +24,7 @@ import com.hsf.spring.beans.Person;
 //@Import({Person.class}) // 导入某个bean,默认使用无参构造器创建对象
 //@Import(value = {MainConfig.MyImportBeanDefinitionRegistrar.class})
 @ComponentScan("com.hsf.spring")  // 默认扫描当前路径下的bean
+@EnableAspectJAutoProxy
 public class MainConfig {
 
 

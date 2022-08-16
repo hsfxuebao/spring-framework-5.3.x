@@ -100,14 +100,17 @@ public class AspectJAwareAdvisorAutoProxyCreator extends AbstractAdvisorAutoProx
 	@Override
 	protected boolean shouldSkip(Class<?> beanClass, String beanName) {
 		// TODO: Consider optimization by caching the list of the aspect names
-		// 找到候选的增强器
+		// todo 找到候选的增强器
 		List<Advisor> candidateAdvisors = findCandidateAdvisors();
 		for (Advisor advisor : candidateAdvisors) {
+			// 从前面的代码分析可以看出，如果是Aop 的动态封装都是基于 InstantiationModelAwarePointcutAdvisorImpl 也就是 InstantiationModelAwarePointcutAdvisor，自然是继承PointcutAdvisor
+			// 如果 代理类基于 AspectJPointcutAdvisor  && aspectName==beanName，即当前初始化的类是ApspectJ类本身。则返回true，跳过代理
 			if (advisor instanceof AspectJPointcutAdvisor &&
 					((AspectJPointcutAdvisor) advisor).getAspectName().equals(beanName)) {
 				return true;
 			}
 		}
+		// 父类shouldSkip 判断了文件是否是 .ORIGINAL 后缀，是则跳过。
 		return super.shouldSkip(beanClass, beanName);
 	}
 

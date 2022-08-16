@@ -102,6 +102,7 @@ public class ProxyCreatorSupport extends AdvisedSupport {
 		if (!this.active) {
 			activate();
 		}
+		// 这里我们需要注意的是 ，这里 createAopProxy 传入的是 this。也就是说这里参数传递实际上是ProxyFactroy
 		return getAopProxyFactory().createAopProxy(this);
 	}
 

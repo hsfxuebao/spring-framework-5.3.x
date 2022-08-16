@@ -557,12 +557,24 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 			prepareRefresh();
 
 			// Tell the subclass to refresh the internal bean factory.
+			/** 1、创建BeanFactory对象
+			*  2、xml解析
+			* 	传统标签解析：bean、import等
+			* 	自定义标签解析 如：<context:component-scan base-package="org.example"/>
+			* 	自定义标签解析流程：
+			* 		a、根据当前解析标签的头信息找到对应的namespaceUri
+			* 		b、加载spring所以jar中的spring.handlers文件。并建立映射关系
+			* 		c、根据namespaceUri从映射关系中找到对应的实现了NamespaceHandler接口的类
+			* 		d、调用类的init方法，init方法是注册了各种自定义标签的解析类
+			* 		e、根据namespaceUri找到对应的解析类，然后调用paser方法完成标签解析
+			* 3、把解析出来的xml标签封装成BeanDefinition对象
+			*/
 			// 2. 工厂创建：BeanFactory 第一次开始创建的时候，有xml解析逻辑
 			ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory();
 
 			// Prepare the bean factory for use in this context.
 			// 3. 预准备工厂，给容器中注册了环境信息作为单实例Bean  方便后续自动装配
-			// 并且放了一些后置处理器
+			// 并且放了一些后置处理器（监听、xxxAware功能）
 			prepareBeanFactory(beanFactory);
 
 			try {
@@ -574,6 +586,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 				// Invoke factory processors registered as beans in the context.
 				// 5. 【大核心】工厂增强：执行所有的BeanFactory 后置增强器 利用BeanFactory后置增强器对工厂进行修改或增强
 				// 配置类也会在这个解析
+				// BeanDefinitionRegistryPostProcessor BeanFactoryPostProcessor 完成对这两个接口的调用
 				invokeBeanFactoryPostProcessors(beanFactory);
 
 				// Register bean processors that intercept bean creation.
@@ -591,6 +604,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 
 				// Initialize other special beans in specific context subclasses.
 				// 9. 留给子类继续增强处理逻辑
+				// 这个方法着重理解模板设计模式，因为在springboot中，这个方法是用来做内嵌tomcat启动的
 				onRefresh();
 
 				// Check for listener beans and register them.
@@ -599,6 +613,14 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 
 				// Instantiate all remaining (non-lazy-init) singletons.
 				// 11. 【大核心】bean创建：完成BeanFactory 初始化（工厂里面所有的组件都好了）
+				/*
+				 * 这个方法一定要理解要具体看
+				 * 1、bean实例化过程
+				 * 2、ioc
+				 * 3、注解支持
+				 * 4、BeanPostProcessor的执行
+				 * 5、Aop的入口
+				 */
 				finishBeanFactoryInitialization(beanFactory);
 
 				// Last step: publish corresponding event.
@@ -734,7 +756,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		beanFactory.registerResolvableDependency(ApplicationContext.class, this);
 
 		// Register early post-processor for detecting inner beans as ApplicationListeners.
-		//
+		// 容器监听探测器
 		beanFactory.addBeanPostProcessor(new ApplicationListenerDetector(this));
 
 		// Detect a LoadTimeWeaver and prepare for weaving, if found.
@@ -776,7 +798,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * <p>Must be called before singleton instantiation.
 	 */
 	protected void invokeBeanFactoryPostProcessors(ConfigurableListableBeanFactory beanFactory) {
-		//
+		// todo 后置处理器的注册代理（门面模式-装饰模式）
 		PostProcessorRegistrationDelegate.invokeBeanFactoryPostProcessors(beanFactory, getBeanFactoryPostProcessors());
 
 		// Detect a LoadTimeWeaver and prepare for weaving, if found in the meantime

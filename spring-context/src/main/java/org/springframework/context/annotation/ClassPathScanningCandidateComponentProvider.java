@@ -204,6 +204,8 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 	 */
 	@SuppressWarnings("unchecked")
 	protected void registerDefaultFilters() {
+		// Component注解
+		//过滤器中添加需要扫描的注解类型，把@Component注解添加进来
 		this.includeFilters.add(new AnnotationTypeFilter(Component.class));
 		ClassLoader cl = ClassPathScanningCandidateComponentProvider.class.getClassLoader();
 		try {
@@ -314,7 +316,7 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 			return addCandidateComponentsFromIndex(this.componentsIndex, basePackage);
 		}
 		else {
-
+			// todo
 			return scanCandidateComponents(basePackage);
 		}
 	}
@@ -423,6 +425,7 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 		try {
 			String packageSearchPath = ResourcePatternResolver.CLASSPATH_ALL_URL_PREFIX +
 					resolveBasePackage(basePackage) + '/' + this.resourcePattern;
+			//这里递归寻找文件，所有的.class文件
 			Resource[] resources = getResourcePatternResolver().getResources(packageSearchPath);
 			boolean traceEnabled = logger.isTraceEnabled();
 			boolean debugEnabled = logger.isDebugEnabled();
@@ -431,8 +434,11 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 					logger.trace("Scanning " + resource);
 				}
 				try {
+					//扫描类里的信息放在MetadataReader对象中
 					MetadataReader metadataReader = getMetadataReaderFactory().getMetadataReader(resource);
+					//判断类上面是否有includeFilters集合内包含的注解
 					if (isCandidateComponent(metadataReader)) {
+						//根据MetadataReader 对象内的类的基本信息，包装成BeanDefinition对象
 						ScannedGenericBeanDefinition sbd = new ScannedGenericBeanDefinition(metadataReader);
 						sbd.setSource(resource);
 						if (isCandidateComponent(sbd)) {

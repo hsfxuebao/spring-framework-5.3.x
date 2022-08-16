@@ -93,6 +93,7 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 	@Override
 	public void registerBeanDefinitions(Document doc, XmlReaderContext readerContext) {
 		this.readerContext = readerContext;
+		// todo
 		doRegisterBeanDefinitions(doc.getDocumentElement());
 	}
 
@@ -145,8 +146,9 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 			}
 		}
 
+		// 模板方法，这里是空方法
 		preProcessXml(root);
-		// todo
+		// todo 主要看这个方法，传统标签和自定义标签的解析
 		parseBeanDefinitions(root, this.delegate);
 		postProcessXml(root);
 
@@ -173,11 +175,15 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 				Node node = nl.item(i);
 				if (node instanceof Element) {
 					Element ele = (Element) node;
+
 					// 遍历文档中的所有标签
+					//判断是否是默认的Namespace，http://www.springframework.org/schema/beans
 					if (delegate.isDefaultNamespace(ele)) {
+						// bean标签，走默认标签解析
 						parseDefaultElement(ele, delegate);
 					}
 					else {
+						// 自定义标签解析
 						delegate.parseCustomElement(ele);
 					}
 				}
@@ -189,12 +195,15 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 	}
 
 	private void parseDefaultElement(Element ele, BeanDefinitionParserDelegate delegate) {
+		//import标签解析
 		if (delegate.nodeNameEquals(ele, IMPORT_ELEMENT)) {
 			importBeanDefinitionResource(ele);
 		}
+		//alias标签解析 别名标签
 		else if (delegate.nodeNameEquals(ele, ALIAS_ELEMENT)) {
 			processAliasRegistration(ele);
 		}
+		// bean标签，***
 		else if (delegate.nodeNameEquals(ele, BEAN_ELEMENT)) {
 			processBeanDefinition(ele, delegate);
 		}
@@ -306,12 +315,14 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 	 */
 	protected void processBeanDefinition(Element ele, BeanDefinitionParserDelegate delegate) {
 
-		// 把当前标签解析完了，BeanDefinition 和beanName都封装了Holder中
+		// todo 把当前标签解析完了，BeanDefinition 和beanName都封装了Holder中
 		BeanDefinitionHolder bdHolder = delegate.parseBeanDefinitionElement(ele);
 		if (bdHolder != null) {
+			// 装饰者设计模式，加上SPI设计思想，解析namespaceuri方法
 			bdHolder = delegate.decorateBeanDefinitionIfRequired(ele, bdHolder);
 			try {
-				// Register the final decorated instance. todo
+				// Register the final decorated instance.
+				// todo 完成document到BeanDefinition对象转换后，对BeanDefinition对象进行缓存注册
 				BeanDefinitionReaderUtils.registerBeanDefinition(bdHolder, getReaderContext().getRegistry());
 			}
 			catch (BeanDefinitionStoreException ex) {

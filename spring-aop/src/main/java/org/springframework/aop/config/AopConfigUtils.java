@@ -54,10 +54,14 @@ public abstract class AopConfigUtils {
 	/**
 	 * Stores the auto proxy creator classes in escalation order.
 	 */
+	// 保存候选的自动代理创建器集合。
 	private static final List<Class<?>> APC_PRIORITY_LIST = new ArrayList<>(3);
 
 	static {
 		// Set up the escalation list...
+		// 这里面三种都是 自动代理创建器，会根据情况选择一个自动代理创建器加载。
+		// 需要注意的是，自动代理创建器只能加载一种，若已经加载一种，则会根据优先级选择优先级高的重新加载
+		// 事务使用
 		APC_PRIORITY_LIST.add(InfrastructureAdvisorAutoProxyCreator.class);
 		APC_PRIORITY_LIST.add(AspectJAwareAdvisorAutoProxyCreator.class);
 		APC_PRIORITY_LIST.add(AnnotationAwareAspectJAutoProxyCreator.class);
@@ -101,9 +105,11 @@ public abstract class AopConfigUtils {
 		return registerOrEscalateApcAsRequired(AnnotationAwareAspectJAutoProxyCreator.class, registry, source);
 	}
 
+	// 可以看到，所谓的优先级顺序实际上是在 APC_PRIORITY_LIST 集合的顺序
 	public static void forceAutoProxyCreatorToUseClassProxying(BeanDefinitionRegistry registry) {
 		if (registry.containsBeanDefinition(AUTO_PROXY_CREATOR_BEAN_NAME)) {
 			BeanDefinition definition = registry.getBeanDefinition(AUTO_PROXY_CREATOR_BEAN_NAME);
+			// 设置 proxyTargetClass 属性
 			definition.getPropertyValues().add("proxyTargetClass", Boolean.TRUE);
 		}
 	}
@@ -111,26 +117,31 @@ public abstract class AopConfigUtils {
 	public static void forceAutoProxyCreatorToExposeProxy(BeanDefinitionRegistry registry) {
 		if (registry.containsBeanDefinition(AUTO_PROXY_CREATOR_BEAN_NAME)) {
 			BeanDefinition definition = registry.getBeanDefinition(AUTO_PROXY_CREATOR_BEAN_NAME);
+			// 设置 exposeProxy 属性
 			definition.getPropertyValues().add("exposeProxy", Boolean.TRUE);
 		}
 	}
 
+	// 这里的 cls 是 AnnotationAwareAspectJAutoProxyCreator.class
 	@Nullable
 	private static BeanDefinition registerOrEscalateApcAsRequired(
 			Class<?> cls, BeanDefinitionRegistry registry, @Nullable Object source) {
 
 		Assert.notNull(registry, "BeanDefinitionRegistry must not be null");
 
-		//
+		// 如果有注册，则判断优先级，将优先级的高的保存
+		// 如果已经存在了自动代理创建器，且存在的自动代理创建器与现在的并不一致，那么需要根据优先级来判断到底要使用哪个
 		if (registry.containsBeanDefinition(AUTO_PROXY_CREATOR_BEAN_NAME)) {
 			BeanDefinition apcDefinition = registry.getBeanDefinition(AUTO_PROXY_CREATOR_BEAN_NAME);
 			if (!cls.getName().equals(apcDefinition.getBeanClassName())) {
 				int currentPriority = findPriorityForClass(apcDefinition.getBeanClassName());
 				int requiredPriority = findPriorityForClass(cls);
 				if (currentPriority < requiredPriority) {
+					// 改变bean所对应的className 属性
 					apcDefinition.setBeanClassName(cls.getName());
 				}
 			}
+			// 如果已经存在自动代理创建器，并且与将要创建的一致，那么无需再次创建
 			return null;
 		}
 

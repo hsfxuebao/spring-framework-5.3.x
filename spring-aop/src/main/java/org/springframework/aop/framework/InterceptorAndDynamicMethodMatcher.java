@@ -27,9 +27,9 @@ import org.springframework.aop.MethodMatcher;
  * @author Rod Johnson
  */
 class InterceptorAndDynamicMethodMatcher {
-
+	// MethodInterceptor  方法拦截器，这里保存了针对于该方法的增强实现
 	final MethodInterceptor interceptor;
-
+	// 方法匹配器，用来匹配当前拦截器是否适用于当前方法
 	final MethodMatcher methodMatcher;
 
 	public InterceptorAndDynamicMethodMatcher(MethodInterceptor interceptor, MethodMatcher methodMatcher) {

@@ -40,7 +40,7 @@ public interface MetadataReader {
 	ClassMetadata getClassMetadata();
 
 	/**
-	 * Read full annotation metadata for the underlying class,
+	 * Read full annotation metadata for the underlying class,ClassPathScanningCandidateComponentProvider
 	 * including metadata for annotated methods.
 	 */
 	AnnotationMetadata getAnnotationMetadata();

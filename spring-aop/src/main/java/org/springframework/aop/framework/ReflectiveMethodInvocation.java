@@ -159,31 +159,42 @@ public class ReflectiveMethodInvocation implements ProxyMethodInvocation, Clonea
 	@Nullable
 	public Object proceed() throws Throwable {
 		// We start with an index of -1 and increment early.
+		// 如果所有的增强器已经执行完了，则调用实际方法
+		// interceptorsAndDynamicMethodMatchers 是在2.2.1 中解析出来的动态拦截器集合
 		// 当前拦截器的索引有没有 超过 拦截器总数量-1
 		if (this.currentInterceptorIndex == this.interceptorsAndDynamicMethodMatchers.size() - 1) {
+			// 这里调用了真正的方法  通过Method.invoke 方法
 			return invokeJoinpoint();
 		}
 
+		// 获取下一个要调用的增强拦截器
 		Object interceptorOrInterceptionAdvice =
 				this.interceptorsAndDynamicMethodMatchers.get(++this.currentInterceptorIndex);
 		if (interceptorOrInterceptionAdvice instanceof InterceptorAndDynamicMethodMatcher) {
 			// Evaluate dynamic method matcher here: static part will already have
 			// been evaluated and found to match.
+			// 动态匹配
 			InterceptorAndDynamicMethodMatcher dm =
 					(InterceptorAndDynamicMethodMatcher) interceptorOrInterceptionAdvice;
 			Class<?> targetClass = (this.targetClass != null ? this.targetClass : this.method.getDeclaringClass());
+			// 如果当前增强匹配当前的方法，则调用增强
 			if (dm.methodMatcher.matches(this.method, targetClass, this.arguments)) {
+				// 调用 拦截器的 invoke 方法
 				return dm.interceptor.invoke(this);
 			}
 			else {
 				// Dynamic matching failed.
 				// Skip this interceptor and invoke the next in the chain.
+				// 不匹配则不执行拦截器，递归调用，遍历下一个拦截器
 				return proceed();
 			}
 		}
 		else {
 			// It's an interceptor, so we just invoke it: The pointcut will have
 			// been evaluated statically before this object was constructed.
+			// 普通的拦截器，直接调用拦截器。我们一般都走这里
+			// 将this 作为参数传递以保证当前实力中的调用链路的执行
+			// 直接调用 Advice 的 invoke 方法
 			return ((MethodInterceptor) interceptorOrInterceptionAdvice).invoke(this);
 		}
 	}
