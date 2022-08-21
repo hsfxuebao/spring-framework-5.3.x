@@ -124,42 +124,64 @@ class ConstructorResolver {
 	 * or {@code null} if none (-> use constructor argument values from bean definition)
 	 * @return a BeanWrapper for the new instance
 	 */
+	//   chosenCtors :  候选构造函数列表, 没有则为null
+	//   explicitArgs : 通过getBean方法以编程方式传递的参数值，
 	public BeanWrapper autowireConstructor(String beanName, RootBeanDefinition mbd,
 			@Nullable Constructor<?>[] chosenCtors, @Nullable Object[] explicitArgs) {
 
 		BeanWrapperImpl bw = new BeanWrapperImpl();
 		this.beanFactory.initBeanWrapper(bw);
-
+		// 候选的构造函数列表
 		Constructor<?> constructorToUse = null;
 		ArgumentsHolder argsHolderToUse = null;
+		// 构造函数最后确定使用的参数
 		Object[] argsToUse = null;
 
+		// 1. 解析构造函数参数
+		// explicitArgs  参数是通过 getBean 方法传入
+		// 如果 getBean在调用时传入了参数，那么直接使用即可。getBean 调用的传参，
+		// 不用从缓存中获取构造函数，需要进行筛选匹配(个人理解，getBean 方法的入参可能并不相同，缓存的构造函数可能并不适用)
 		if (explicitArgs != null) {
 			argsToUse = explicitArgs;
 		}
 		else {
+			// 否则 尝试从 BeanDefinition 中加载缓存的bean构造时需要的参数
 			Object[] argsToResolve = null;
+			// 加锁
 			synchronized (mbd.constructorArgumentLock) {
+				// 从缓存中获取要使用的构造函数。没有缓存则为null
 				constructorToUse = (Constructor<?>) mbd.resolvedConstructorOrFactoryMethod;
+				// 如果构造函数不为空 && 构造函数参数已经解析
 				if (constructorToUse != null && mbd.constructorArgumentsResolved) {
 					// Found a cached constructor...
+					// 从缓存中获取。这里如果不能获取到完全解析好的参数，则获取尚未解析的参数，进行解析后再赋值给 argsToUse
+					// resolvedConstructorArguments 是完全解析好的构造函数参数
 					argsToUse = mbd.resolvedConstructorArguments;
 					if (argsToUse == null) {
+						// 配置构造函数参数
+						// preparedConstructorArguments 是尚未完全解析的构造函数参数
 						argsToResolve = mbd.preparedConstructorArguments;
 					}
 				}
 			}
+			//  如果缓存中存在 尚未完全解析的参数列表，则进行进一步的解析
 			if (argsToResolve != null) {
+				// 解析参数类型，如给定的参数列表为(int,int),这时就会将配置中的("1", "1") 转化为 (1,1)
+				// 缓存中的值可能是最终值，也可能是原始值，因为不一定需要类型转换
 				argsToUse = resolvePreparedArguments(beanName, mbd, bw, constructorToUse, argsToResolve);
 			}
 		}
 
+		// 如果构造函数 和 构造函数入参都不为空，则可以直接生成bean。否则的话，需要通过一定的规则进行筛选
 		if (constructorToUse == null || argsToUse == null) {
 			// Take specified constructors, if any.
+			// chosenCtors 是候选的构造函数，如果存在候选的构造函数，则跳过这里，否则通过反射获取bean的构造函数集合
+			// 2. 获取候选的构造参数列表
 			Constructor<?>[] candidates = chosenCtors;
 			if (candidates == null) {
 				Class<?> beanClass = mbd.getBeanClass();
 				try {
+					// 反射获取bean的构造函数集合
 					candidates = (mbd.isNonPublicAccessAllowed() ?
 							beanClass.getDeclaredConstructors() : beanClass.getConstructors());
 				}
@@ -169,63 +191,91 @@ class ConstructorResolver {
 							"] from ClassLoader [" + beanClass.getClassLoader() + "] failed", ex);
 				}
 			}
-
+			// 如果构造函数只有一个 && getBean 没有传参 && 构造参数无参
+			// 满足上述三个条件，则无需继续筛选构造函数，直接使用唯一一个构造函数创建 BeanWrapper 并返回即可。
 			if (candidates.length == 1 && explicitArgs == null && !mbd.hasConstructorArgumentValues()) {
 				Constructor<?> uniqueCandidate = candidates[0];
+				// 确定该构造函数无参
 				if (uniqueCandidate.getParameterCount() == 0) {
 					synchronized (mbd.constructorArgumentLock) {
+						// 将解析结束的信息缓存到 mdb中
+						// 缓存解析出来的唯一构造函数
 						mbd.resolvedConstructorOrFactoryMethod = uniqueCandidate;
+						// 标记构造函数已经完全解析
 						mbd.constructorArgumentsResolved = true;
+						// 缓存解析好的构造函数参数。这里是空数组 (Object[] EMPTY_ARGS = new Object[0];)
 						mbd.resolvedConstructorArguments = EMPTY_ARGS;
 					}
+					// 调用 instantiate 方法创建对象实例并保存到 bw中
 					bw.setBeanInstance(instantiate(beanName, mbd, uniqueCandidate, EMPTY_ARGS));
 					return bw;
 				}
 			}
 
 			// Need to resolve the constructor.
+			//  待选构造函数列表不为null || 需要构造注入，则需要解析。
+			//  mbd.getResolvedAutowireMode() 是针对 xml 注入的
 			boolean autowiring = (chosenCtors != null ||
 					mbd.getResolvedAutowireMode() == AutowireCapableBeanFactory.AUTOWIRE_CONSTRUCTOR);
 			ConstructorArgumentValues resolvedValues = null;
-
+			// 3. 解析出来的构造函数的个数
 			int minNrOfArgs;
+			// 如果explicitArgs  不为空，直接使用它作为参数，毕竟是传入的参数，没必要再从进一步解析。
 			if (explicitArgs != null) {
 				minNrOfArgs = explicitArgs.length;
 			}
 			else {
+				// 获取xml配置文件中的配置的构造函数参数
 				ConstructorArgumentValues cargs = mbd.getConstructorArgumentValues();
+				// 用于承载解析后的构造函数参数的值
 				resolvedValues = new ConstructorArgumentValues();
+				// 确定解析到的构造函数参数个数并进行类型转换匹配。在下面有详细解读
 				minNrOfArgs = resolveConstructorArguments(beanName, mbd, bw, cargs, resolvedValues);
 			}
-
+			// 4. 寻找最匹配的构造函数
+			// 对构造函数列表进行排序： public 构造函数优先参数数量降序，非public构造函数参数数量降序
 			AutowireUtils.sortConstructors(candidates);
 			int minTypeDiffWeight = Integer.MAX_VALUE;
 			Set<Constructor<?>> ambiguousConstructors = null;
 			Deque<UnsatisfiedDependencyException> causes = null;
-
+			// 遍历构造函数，寻找合适的构造函数
 			for (Constructor<?> candidate : candidates) {
+				// 获取当前构造函数参数个数
 				int parameterCount = candidate.getParameterCount();
-
+				// 如果已经找到选用的构造函数 (argstoUse != null) 或者  需要的构造函数的参数个数 小于 当前构造函数参数个数 则终止
+				// constructorToUse != null 说明找到了构造函数
+				// argsToUse != null 说明参数已经赋值
+				// argsToUse.length > parameterCount
+				// 即已经找到适配的构造函数(可能不是最终的，但参数数量一定相同), 预选构造函数的参数数量 大于 当前构造函数的数量，可以直接break，因为按照参数数量降序排序，这里如果小于就没有必要继续比较下去
 				if (constructorToUse != null && argsToUse != null && argsToUse.length > parameterCount) {
 					// Already found greedy constructor that can be satisfied ->
 					// do not look any further, there are only less greedy constructors left.
 					break;
 				}
 				if (parameterCount < minNrOfArgs) {
+					// 参数数量不相等,跳过
 					continue;
 				}
-
+				// 到这里说明尚未找到构造函数，且目前的构造函数和需要的构造函数参数个数相同，下面要对类型进行比较。
 				ArgumentsHolder argsHolder;
 				Class<?>[] paramTypes = candidate.getParameterTypes();
+				// 如果构造函数存在参数，resolvedValues 是上面解析后的构造函数，有参则根据 值 构造对应参数类型的参数
 				if (resolvedValues != null) {
 					try {
+						// 获取参数名称
+						// 从 @ConstructorProperties 注解上获取参数名称
 						String[] paramNames = ConstructorPropertiesChecker.evaluate(candidate, parameterCount);
+						// 为null则说明没有使用注解
 						if (paramNames == null) {
+							// 获取参数名称探索器
 							ParameterNameDiscoverer pnd = this.beanFactory.getParameterNameDiscoverer();
 							if (pnd != null) {
+								// 获取指定的构造函数的参数名称
 								paramNames = pnd.getParameterNames(candidate);
 							}
 						}
+						// 根据类型和数据类型创建 参数持有者
+						// 这里会调用  DefaultListableBeanFactory#resolveDependency 方法来解析依赖关系
 						argsHolder = createArgumentArray(beanName, mbd, resolvedValues, bw, paramTypes, paramNames,
 								getUserDeclaredConstructor(candidate), autowiring, candidates.length == 1);
 					}
@@ -243,16 +293,21 @@ class ConstructorResolver {
 				}
 				else {
 					// Explicit arguments given -> arguments length must match exactly.
+					// 如果构造函数为默认构造函数，没有参数，如果参数不完全一致则跳过
 					if (parameterCount != explicitArgs.length) {
 						continue;
 					}
+					// 构造函数没有参数的情况
 					argsHolder = new ArgumentsHolder(explicitArgs);
 				}
-
+				// 探测是否有不确定性的构造函数存在，例如不同构造函数的参数为父子关系
 				int typeDiffWeight = (mbd.isLenientConstructorResolution() ?
 						argsHolder.getTypeDifferenceWeight(paramTypes) : argsHolder.getAssignabilityWeight(paramTypes));
 				// Choose this constructor if it represents the closest match.
+				// 如果他是当前最接近匹配则选择作为构造函数，因为可能有多个构造函数都同时满足,
+				// 比如构造函数参数类型全是 Object，选择最合适的（typeDiffWeight 最小的）作为最终构造函数
 				if (typeDiffWeight < minTypeDiffWeight) {
+					// 找到最匹配的构造函数赋值保存
 					constructorToUse = candidate;
 					argsHolderToUse = argsHolder;
 					argsToUse = argsHolder.arguments;
@@ -260,6 +315,7 @@ class ConstructorResolver {
 					ambiguousConstructors = null;
 				}
 				else if (constructorToUse != null && typeDiffWeight == minTypeDiffWeight) {
+					// 如果 已经找到候选构造函数，且当前这个构造函数也有相同的类似度则保存到 ambiguousConstructors 中。后面用于抛出异常
 					if (ambiguousConstructors == null) {
 						ambiguousConstructors = new LinkedHashSet<>();
 						ambiguousConstructors.add(constructorToUse);
@@ -267,7 +323,7 @@ class ConstructorResolver {
 					ambiguousConstructors.add(candidate);
 				}
 			}
-
+			// 如果 constructorToUse  构造函数为  null，则查找构造函数失败，抛出异常
 			if (constructorToUse == null) {
 				if (causes != null) {
 					UnsatisfiedDependencyException ex = causes.removeLast();
@@ -280,19 +336,21 @@ class ConstructorResolver {
 						"Could not resolve matching constructor on bean class [" + mbd.getBeanClassName() + "] " +
 						"(hint: specify index/type/name arguments for simple parameters to avoid type ambiguities)");
 			}
+			// 如果ambiguousConstructors 不为空说明有多个构造函数可适配，并且 如果不允许多个存在，则抛出异常
 			else if (ambiguousConstructors != null && !mbd.isLenientConstructorResolution()) {
 				throw new BeanCreationException(mbd.getResourceDescription(), beanName,
 						"Ambiguous constructor matches found on bean class [" + mbd.getBeanClassName() + "] " +
 						"(hint: specify index/type/name arguments for simple parameters to avoid type ambiguities): " +
 						ambiguousConstructors);
 			}
-
+			// 将解析的构造函数加入缓存
 			if (explicitArgs == null && argsHolderToUse != null) {
 				argsHolderToUse.storeCache(mbd, constructorToUse);
 			}
 		}
 
 		Assert.state(argsToUse != null, "Unresolved constructor arguments");
+		// 将构建的实例加入BeanWrapper 中
 		bw.setBeanInstance(instantiate(beanName, mbd, constructorToUse, argsToUse));
 		return bw;
 	}
