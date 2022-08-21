@@ -969,13 +969,14 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 				}
 				// 不是FactoryBean则执行这个逻辑，普通的单实例非懒加载bean的创建
 				else {
+					// todo
 					getBean(beanName);
 				}
 			}
 		}
 
 		// Trigger post-initialization callback for all applicable beans...
-		// 后置处理器 SmartInitializingSingleton
+		// todo 后置处理器 SmartInitializingSingleton.afterSingletonsInstantiated()方法
 		for (String beanName : beanNames) {
 			Object singletonInstance = getSingleton(beanName);
 			if (singletonInstance instanceof SmartInitializingSingleton) {

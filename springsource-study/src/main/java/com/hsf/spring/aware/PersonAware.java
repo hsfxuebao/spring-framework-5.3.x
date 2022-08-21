@@ -29,7 +29,7 @@ public class PersonAware implements ApplicationContextAware, MessageSourceAware 
 
 	@Override
 	public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-		this.context = context;
+		this.context = applicationContext;
 	}
 
 	@Override

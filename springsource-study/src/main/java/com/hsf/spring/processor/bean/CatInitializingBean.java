@@ -1,8 +1,9 @@
-package com.hsf.spring.beans;
+package com.hsf.spring.processor.bean;
 
 
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.SmartInitializingSingleton;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -12,7 +13,7 @@ import org.springframework.stereotype.Component;
 //@Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 //容器就应该给Cat再创建一个对象
 @Component
-public class CatInitializingBean implements InitializingBean, SmartInitializingSingleton {
+public class CatInitializingBean implements InitializingBean {
 
 	public CatInitializingBean(){
 		System.out.println("cat被创建了...");
@@ -36,8 +37,9 @@ public class CatInitializingBean implements InitializingBean, SmartInitializingS
 		System.out.println("CatInitializingBean..afterPropertiesSet...");
 	}
 
-	@Override
-	public void afterSingletonsInstantiated() {
-		System.out.println("所有组件都创建完成以后，再来执行这个方法.....");
+	@Autowired
+	private void init() {
+		System.out.println("CatInitializingBean init....");
 	}
+
 }

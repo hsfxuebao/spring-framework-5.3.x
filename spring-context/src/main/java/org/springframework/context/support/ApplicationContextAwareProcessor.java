@@ -99,6 +99,7 @@ class ApplicationContextAwareProcessor implements BeanPostProcessor {
 			}, acc);
 		}
 		else {
+			// todo 执行xxxAware的回调
 			invokeAwareInterfaces(bean);
 		}
 
