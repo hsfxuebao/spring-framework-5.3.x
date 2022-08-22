@@ -72,6 +72,7 @@ public interface FactoryBean<T> {
 	 * the factory bean class.
 	 * @since 5.2
 	 */
+	// 属性名
 	String OBJECT_TYPE_ATTRIBUTE = "factoryBeanObjectType";
 
 
@@ -92,6 +93,7 @@ public interface FactoryBean<T> {
 	 * @throws Exception in case of creation errors
 	 * @see FactoryBeanNotInitializedException
 	 */
+	// 获取bean实例，实例化bean 的逻辑就在这里实现
 	@Nullable
 	T getObject() throws Exception;
 
@@ -114,6 +116,7 @@ public interface FactoryBean<T> {
 	 * or {@code null} if not known at the time of the call
 	 * @see ListableBeanFactory#getBeansOfType
 	 */
+	// 获取bean类型
 	@Nullable
 	Class<?> getObjectType();
 

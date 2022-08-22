@@ -20,10 +20,16 @@ public class AnnotationMainTest {
 		AnnotationConfigApplicationContext context =
 				new AnnotationConfigApplicationContext(MainConfig.class);
 
+		// FactoryBean测试
+		Object hello = context.getBean("helloFactory");
+		System.out.println(hello);
+		Object helloFactory = context.getBean("&helloFactory");
+		System.out.println(helloFactory);
 
-		//AOP,原理测试
-		HelloService helloService = context.getBean(HelloService.class);
-		helloService.sayHello("zhangsan");
+
+		//		//AOP,原理测试
+//		HelloService helloService = context.getBean(HelloService.class);
+//		helloService.sayHello("zhangsan");
 
 
 //		// 使用@Bean 注入实例
