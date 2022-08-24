@@ -207,6 +207,7 @@ class ConfigurationClassParser {
 	}
 
 	protected final void parse(AnnotationMetadata metadata, String beanName) throws IOException {
+		// todo
 		processConfigurationClass(new ConfigurationClass(metadata, beanName), DEFAULT_EXCLUSION_FILTER);
 	}
 
@@ -216,6 +217,7 @@ class ConfigurationClassParser {
 	 */
 	public void validate() {
 		for (ConfigurationClass configClass : this.configurationClasses.keySet()) {
+			// todo
 			configClass.validate(this.problemReporter);
 		}
 	}
@@ -259,7 +261,7 @@ class ConfigurationClassParser {
 		// Recursively process the configuration class and its superclass hierarchy.
 		SourceClass sourceClass = asSourceClass(configClass, filter);
 		do {
-			// 解析配置类中的所有注解
+			// todo 解析配置类中的所有注解
 			sourceClass = doProcessConfigurationClass(configClass, sourceClass, filter);
 		}
 		while (sourceClass != null);
@@ -505,7 +507,6 @@ class ConfigurationClassParser {
 				DEFAULT_PROPERTY_SOURCE_FACTORY : BeanUtils.instantiateClass(factoryClass));
 
 		// 遍历文件路径
-
 		for (String location : locations) {
 			//  根据路径获取到资源文件并保存到environment 中
 			// 解决占位符，获取真正路径
@@ -630,6 +631,7 @@ class ConfigurationClassParser {
 							exclusionFilter = exclusionFilter.or(selectorFilter);
 						}
 						if (selector instanceof DeferredImportSelector) {
+							//
 							this.deferredImportSelectorHandler.handle(configClass, (DeferredImportSelector) selector);
 						}
 						else {

@@ -28,12 +28,12 @@ import com.hsf.spring.beans.Person;
 public class MainConfig {
 
 
-//	@Bean
-//	public Person getPerson() {
-//		Person person = new Person();
-//		person.setName("张三");
-//		return person;
-//	}
+	@Bean
+	public Person getPerson() {
+		Person person = new Person();
+		person.setName("张三");
+		return person;
+	}
 
 	static class MyImportBeanDefinitionRegistrar implements ImportBeanDefinitionRegistrar {
 

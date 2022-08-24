@@ -74,16 +74,16 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	private static final int SUPPRESSED_EXCEPTIONS_LIMIT = 100;
 
 
-	/** Cache of singleton objects: bean name to bean instance. */
+	/**  存放完成的bean Cache of singleton objects: bean name to bean instance. */
 	// 缓存所有的单实例对象， 单实例对象池 ios容器-单例池  一级缓存
 	//	用于保存BeanName和创建bean实例之间的关系，即缓存bean。 beanName -> instance
 	private final Map<String, Object> singletonObjects = new ConcurrentHashMap<>(256);
 
-	/** 三级缓存Cache of singleton factories: bean name to ObjectFactory. */
+	/** 三级缓存:函数式接口（延迟调用）   Cache of singleton factories: bean name to ObjectFactory. */
 	// 用于保存BeanName和常见bean的工厂之间的关系。beanname-> ObjectFactory
 	private final Map<String, ObjectFactory<?>> singletonFactories = new HashMap<>(16);
 
-	/** 二级缓存 Cache of early singleton objects: bean name to bean instance. */
+	/** 二级缓存：存放不完整的bean(还没有属性赋值)，区分完整bean和不完整bean  Cache of early singleton objects: bean name to bean instance. */
 	// 也是保存BeanName和创建bean实例之间的关系，与singletonObjects 不同的是，如果一个单例bean被保存在此，
 	// 则当bean还在创建过程中(比如 A类中有B类属性，当创建A类时发现需要先创建B类，
 	// 这时候Spring又跑去创建B类，A类就会添加到该集合中，表示正在创建)，就可以通过getBean方法获取到了，

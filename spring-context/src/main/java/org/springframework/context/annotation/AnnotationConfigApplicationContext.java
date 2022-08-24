@@ -69,6 +69,7 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 		// todo
 		this.reader = new AnnotatedBeanDefinitionReader(this);
 		createAnnotatedBeanDefReader.end();
+		// todo
 		this.scanner = new ClassPathBeanDefinitionScanner(this);
 	}
 
@@ -169,6 +170,7 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 		Assert.notEmpty(componentClasses, "At least one component class must be specified");
 		StartupStep registerComponentClass = this.getApplicationStartup().start("spring.context.component-classes.register")
 				.tag("classes", () -> Arrays.toString(componentClasses));
+		// todo
 		this.reader.register(componentClasses);
 		registerComponentClass.end();
 	}

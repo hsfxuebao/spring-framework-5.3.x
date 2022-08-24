@@ -221,6 +221,7 @@ final class ConfigurationClass {
 			}
 			// 对配置类中的 @Bean 注解修饰的方法进行校验
 			for (BeanMethod beanMethod : this.beanMethods) {
+				// todo
 				beanMethod.validate(problemReporter);
 			}
 		}

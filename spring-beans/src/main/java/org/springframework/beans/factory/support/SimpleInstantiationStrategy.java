@@ -60,12 +60,16 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 	@Override
 	public Object instantiate(RootBeanDefinition bd, @Nullable String beanName, BeanFactory owner) {
 		// Don't override the class with CGLIB if no overrides.
+		// 如果当前bean中的方法没有都没有被重写，则直接反射就好了。不需要使用cglib 来进行代理
 		if (!bd.hasMethodOverrides()) {
 			Constructor<?> constructorToUse;
 			synchronized (bd.constructorArgumentLock) {
+				// 尝试获取已经解析成功缓存的 构造函数
 				constructorToUse = (Constructor<?>) bd.resolvedConstructorOrFactoryMethod;
 				if (constructorToUse == null) {
+					// 没有缓存则自己指定无参构造函数
 					final Class<?> clazz = bd.getBeanClass();
+					// 如果是接口直接抛出异常
 					if (clazz.isInterface()) {
 						throw new BeanInstantiationException(clazz, "Specified class is an interface");
 					}
@@ -75,8 +79,10 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 									(PrivilegedExceptionAction<Constructor<?>>) clazz::getDeclaredConstructor);
 						}
 						else {
+							// 返回符合参数类型的构造函数(这里是无参构造函数，所以并没有传递参数)
 							constructorToUse = clazz.getDeclaredConstructor();
 						}
+						// 指定无参构造函数
 						bd.resolvedConstructorOrFactoryMethod = constructorToUse;
 					}
 					catch (Throwable ex) {
@@ -84,10 +90,12 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 					}
 				}
 			}
+			// 通过反射创建 bean
 			return BeanUtils.instantiateClass(constructorToUse);
 		}
 		else {
 			// Must generate CGLIB subclass.
+			// 如果有方法被重写了，则使用cglib 动态代理
 			return instantiateWithMethodInjection(bd, beanName, owner);
 		}
 	}

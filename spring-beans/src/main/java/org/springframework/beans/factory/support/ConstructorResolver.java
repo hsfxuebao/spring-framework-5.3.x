@@ -229,7 +229,7 @@ class ConstructorResolver {
 				ConstructorArgumentValues cargs = mbd.getConstructorArgumentValues();
 				// 用于承载解析后的构造函数参数的值
 				resolvedValues = new ConstructorArgumentValues();
-				// 确定解析到的构造函数参数个数并进行类型转换匹配。在下面有详细解读
+				// todo 确定解析到的构造函数参数个数并进行类型转换匹配。在下面有详细解读
 				minNrOfArgs = resolveConstructorArguments(beanName, mbd, bw, cargs, resolvedValues);
 			}
 			// 4. 寻找最匹配的构造函数
@@ -345,12 +345,13 @@ class ConstructorResolver {
 			}
 			// 将解析的构造函数加入缓存
 			if (explicitArgs == null && argsHolderToUse != null) {
+				// todo
 				argsHolderToUse.storeCache(mbd, constructorToUse);
 			}
 		}
 
 		Assert.state(argsToUse != null, "Unresolved constructor arguments");
-		// 将构建的实例加入BeanWrapper 中
+		// todo 将构建的实例加入BeanWrapper 中
 		bw.setBeanInstance(instantiate(beanName, mbd, constructorToUse, argsToUse));
 		return bw;
 	}
@@ -359,7 +360,9 @@ class ConstructorResolver {
 			String beanName, RootBeanDefinition mbd, Constructor<?> constructorToUse, Object[] argsToUse) {
 
 		try {
+			// 获取实例化策略
 			InstantiationStrategy strategy = this.beanFactory.getInstantiationStrategy();
+			// 通过策略实例化bean
 			if (System.getSecurityManager() != null) {
 				return AccessController.doPrivileged((PrivilegedAction<Object>) () ->
 						strategy.instantiate(mbd, beanName, this.beanFactory, constructorToUse, argsToUse),
@@ -725,28 +728,34 @@ class ConstructorResolver {
 	 */
 	private int resolveConstructorArguments(String beanName, RootBeanDefinition mbd, BeanWrapper bw,
 			ConstructorArgumentValues cargs, ConstructorArgumentValues resolvedValues) {
-
+		// 获取类型转换器
 		TypeConverter customConverter = this.beanFactory.getCustomTypeConverter();
 		TypeConverter converter = (customConverter != null ? customConverter : bw);
 		BeanDefinitionValueResolver valueResolver =
 				new BeanDefinitionValueResolver(this.beanFactory, beanName, mbd, converter);
 
+		// 获取参数个数，这并不一定是最终的参数个数
 		int minNrOfArgs = cargs.getArgumentCount();
 
+		// 遍历 indexedArgumentValues
 		for (Map.Entry<Integer, ConstructorArgumentValues.ValueHolder> entry : cargs.getIndexedArgumentValues().entrySet()) {
 			int index = entry.getKey();
 			if (index < 0) {
 				throw new BeanCreationException(mbd.getResourceDescription(), beanName,
 						"Invalid constructor argument index: " + index);
 			}
+			// 这里注意，如果 <constructor-arg> 的index属性大于 参数实际个数，那么Spring会采用index属性的值
 			if (index + 1 > minNrOfArgs) {
+				// +1 是因为index 从0开始
 				minNrOfArgs = index + 1;
 			}
 			ConstructorArgumentValues.ValueHolder valueHolder = entry.getValue();
+			// 如果类型已经解析过，则保存在 resolvedValues 中
 			if (valueHolder.isConverted()) {
 				resolvedValues.addIndexedArgumentValue(index, valueHolder);
 			}
 			else {
+				// 否则进行类型解析后再保存到 resolvedValues 中
 				Object resolvedValue =
 						valueResolver.resolveValueIfNecessary("constructor argument", valueHolder.getValue());
 				ConstructorArgumentValues.ValueHolder resolvedValueHolder =
@@ -756,11 +765,14 @@ class ConstructorResolver {
 			}
 		}
 
+		// 遍历 genericArgumentValues
 		for (ConstructorArgumentValues.ValueHolder valueHolder : cargs.getGenericArgumentValues()) {
+			// 如果已经解析，则保存到resolvedValues 中
 			if (valueHolder.isConverted()) {
 				resolvedValues.addGenericArgumentValue(valueHolder);
 			}
 			else {
+				// 否则进行类型解析后再保存到 resolvedValues 中
 				Object resolvedValue =
 						valueResolver.resolveValueIfNecessary("constructor argument", valueHolder.getValue());
 				ConstructorArgumentValues.ValueHolder resolvedValueHolder = new ConstructorArgumentValues.ValueHolder(
@@ -769,7 +781,7 @@ class ConstructorResolver {
 				resolvedValues.addGenericArgumentValue(resolvedValueHolder);
 			}
 		}
-
+		// 返回解析后的构造函数参数个数。
 		return minNrOfArgs;
 	}
 
@@ -1029,9 +1041,12 @@ class ConstructorResolver {
 
 		public void storeCache(RootBeanDefinition mbd, Executable constructorOrFactoryMethod) {
 			synchronized (mbd.constructorArgumentLock) {
+				// 保存工厂方法
 				mbd.resolvedConstructorOrFactoryMethod = constructorOrFactoryMethod;
+				// 设置已经完全解析
 				mbd.constructorArgumentsResolved = true;
 				if (this.resolveNecessary) {
+					// 如果必须解析，将一些准备解析的参数保存，后面解析
 					mbd.preparedConstructorArguments = this.preparedArguments;
 				}
 				else {

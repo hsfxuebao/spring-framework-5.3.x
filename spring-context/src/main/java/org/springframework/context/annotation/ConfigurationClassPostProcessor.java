@@ -291,7 +291,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 					logger.debug("Bean definition has already been processed as a configuration class: " + beanDef);
 				}
 			}
-			// 1. ConfigurationClassUtils.checkConfigurationClassCandidate 解析了当前bean是否是配置类，
+			// todo 1. ConfigurationClassUtils.checkConfigurationClassCandidate 解析了当前bean是否是配置类，
 			//  需要注意的是，本文所说的配置类即使满足 full 或 lite 条件的类，而不仅仅是被 @Configuration 修饰的类。
 			else if (ConfigurationClassUtils.checkConfigurationClassCandidate(beanDef, this.metadataReaderFactory)) {
 				// 将配置类加到候选集合里面，等待处理
@@ -369,8 +369,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 						registry, this.sourceExtractor, this.resourceLoader, this.environment,
 						this.importBeanNameGenerator, parser.getImportRegistry());
 			}
-			// todo
-			// 4. 注册bean
+			// todo 4. 注册bean
 			this.reader.loadBeanDefinitions(configClasses);
 			alreadyParsed.addAll(configClasses);
 			processConfig.tag("classCount", () -> String.valueOf(configClasses.size())).end();

@@ -100,10 +100,13 @@ public class InjectionMetadata {
 
 	public void checkConfigMembers(RootBeanDefinition beanDefinition) {
 		Set<InjectedElement> checkedElements = new LinkedHashSet<>(this.injectedElements.size());
+		// 遍历待注入的 bean(被封装成了 element )
 		for (InjectedElement element : this.injectedElements) {
+			// 获取 Member，包含了 bean 信息
 			Member member = element.getMember();
+			// 如果没被缓存则进行缓存，否则直接跳过
 			if (!beanDefinition.isExternallyManagedConfigMember(member)) {
-				beanDefinition.registerExternallyManagedConfigMember(member);
+				beanDefinition.registerExternallyManagedConfigMember(member);i
 				checkedElements.add(element);
 			}
 		}
@@ -115,6 +118,7 @@ public class InjectionMetadata {
 		Collection<InjectedElement> elementsToIterate =
 				(checkedElements != null ? checkedElements : this.injectedElements);
 		if (!elementsToIterate.isEmpty()) {
+			// todo 先执行AutowiredFieldElement，后执行AutowiredMethodElement,看这两个类的inject方法
 			for (InjectedElement element : elementsToIterate) {
 				element.inject(target, beanName, pvs);
 			}
