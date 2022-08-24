@@ -2,11 +2,9 @@ package com.hsf.spring;
 
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
-import com.hsf.spring.aop.HelloService;
-import com.hsf.spring.aware.PersonAware;
-import com.hsf.spring.beans.Cat;
-import com.hsf.spring.beans.Person;
 import com.hsf.spring.config.MainConfig;
+import com.hsf.spring.listener.DemoEvent;
+import com.hsf.spring.listener.MessageEvent;
 
 /**
  * @author hsfxuebao
@@ -20,17 +18,22 @@ public class AnnotationMainTest {
 		AnnotationConfigApplicationContext context =
 				new AnnotationConfigApplicationContext(MainConfig.class);
 
-		// FactoryBean测试
-		Object hello = context.getBean("helloFactory");
-		System.out.println(hello);
-		Object helloFactory = context.getBean("&helloFactory");
-		System.out.println(helloFactory);
-
-
 		//		//AOP,原理测试
 //		HelloService helloService = context.getBean(HelloService.class);
 //		helloService.sayHello("zhangsan");
 
+
+		//测试事件监听器
+		DemoEvent demoEvent = new DemoEvent("", "world");
+		context.publishEvent(demoEvent);
+		context.publishEvent(new MessageEvent(""));
+
+
+		// FactoryBean测试
+//		Object hello = context.getBean("helloFactory");
+//		System.out.println(hello);
+//		Object helloFactory = context.getBean("&helloFactory");
+//		System.out.println(helloFactory);
 
 //		// 使用@Bean 注入实例
 //		Object person = context.getBean(Person.class);

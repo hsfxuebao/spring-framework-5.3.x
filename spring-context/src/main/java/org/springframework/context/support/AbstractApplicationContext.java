@@ -403,6 +403,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		Assert.notNull(event, "Event must not be null");
 
 		// Decorate event as an ApplicationEvent if necessary
+		// 分析事件类型
 		ApplicationEvent applicationEvent;
 		// ApplicationEvent 接口下的事件
 		if (event instanceof ApplicationEvent) {
@@ -421,11 +422,13 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 			this.earlyApplicationEvents.add(applicationEvent);
 		}
 		else {
+			// 获取事件广播器进行广播事件广播。我们上面说了一般我们使用默认的事件广播器即 SimpleApplicationEventMulticaster
 			// 拿到多播器发送事件即可
 			getApplicationEventMulticaster().multicastEvent(applicationEvent, eventType);
 		}
 
 		// Publish event via parent context as well...
+		// 寻找父类BeanFactory，继续发布消息
 		if (this.parent != null) {
 			if (this.parent instanceof AbstractApplicationContext) {
 				((AbstractApplicationContext) this.parent).publishEvent(event, eventType);
