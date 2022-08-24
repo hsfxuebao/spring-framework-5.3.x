@@ -245,14 +245,21 @@ final class PostProcessorRegistrationDelegate {
 		// a bean is created during BeanPostProcessor instantiation, i.e. when
 		// a bean is not eligible for getting processed by all BeanPostProcessors.
 		int beanProcessorTargetCount = beanFactory.getBeanPostProcessorCount() + 1 + postProcessorNames.length;
+		// BeanPostProcessorChecker 是一个普通的信息打印
+		//可能会有些情况当Spring 的配置中的后处理器还没有被注册就已经开始了bean的实例化，便会打印出BeanPostProcessorChecker 中设定的信息
 		beanFactory.addBeanPostProcessor(new BeanPostProcessorChecker(beanFactory, beanProcessorTargetCount));
 
 		// Separate between BeanPostProcessors that implement PriorityOrdered,
 		// Ordered, and the rest.
+		// 保存实现了PriorityOrderd 接口的 后处理器
 		List<BeanPostProcessor> priorityOrderedPostProcessors = new ArrayList<>();
+		// 保存MergedBeanDefinitionPostProcessor 后处理器
 		List<BeanPostProcessor> internalPostProcessors = new ArrayList<>();
+		// 保存实现了Orderd 接口的 后处理器
 		List<String> orderedPostProcessorNames = new ArrayList<>();
+		// 保存没有实现任何排序接口的后处理器
 		List<String> nonOrderedPostProcessorNames = new ArrayList<>();
+		// 按照规则筛选出不同的后处理器保存到集合中
 		for (String ppName : postProcessorNames) {
 			// 获取所有实现了PriorityOrdered接口
 			if (beanFactory.isTypeMatch(ppName, PriorityOrdered.class)) {
@@ -303,6 +310,7 @@ final class PostProcessorRegistrationDelegate {
 		// Finally, re-register all internal BeanPostProcessors.
 		// 最后，注册所有内部的BeanPostProcessors
 		sortPostProcessors(internalPostProcessors, beanFactory);
+		// 这里并不是重复注册， registerBeanPostProcessors 方法会先移除已存在的 BeanPostProcessor 随后重新加入。
 		registerBeanPostProcessors(beanFactory, internalPostProcessors);
 
 		// Re-register post-processor for detecting inner beans as ApplicationListeners,

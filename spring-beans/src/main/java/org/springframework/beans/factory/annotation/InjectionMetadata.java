@@ -106,7 +106,7 @@ public class InjectionMetadata {
 			Member member = element.getMember();
 			// 如果没被缓存则进行缓存，否则直接跳过
 			if (!beanDefinition.isExternallyManagedConfigMember(member)) {
-				beanDefinition.registerExternallyManagedConfigMember(member);i
+				beanDefinition.registerExternallyManagedConfigMember(member);
 				checkedElements.add(element);
 			}
 		}
