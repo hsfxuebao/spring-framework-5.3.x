@@ -463,13 +463,18 @@ public class AdvisedSupport extends ProxyConfig implements Advised {
 	 * @param targetClass the target class
 	 * @return a List of MethodInterceptors (may also include InterceptorAndDynamicMethodMatchers)
 	 */
+	// 当前 this 为 ProxyFactory，所以这里的缓存是作用域是在 ProxyFactory中，如果换一个 ProxyFactory则需要重新加载一次。
 	public List<Object> getInterceptorsAndDynamicInterceptionAdvice(Method method, @Nullable Class<?> targetClass) {
+		// 生成方法的key
 		MethodCacheKey cacheKey = new MethodCacheKey(method);
+		// 从缓存中获取该方法的 拦截器和动态拦截建议
 		List<Object> cached = this.methodCache.get(cacheKey);
 		// 把增强器 转换成 拦截器（可以真正执行目标方法）
 		if (cached == null) {
+			// todo 缓存没有命中则重新获取
 			cached = this.advisorChainFactory.getInterceptorsAndDynamicInterceptionAdvice(
 					this, method, targetClass);
+			// 将获取到的 拦截器和动态拦截建议 放入缓存中。
 			this.methodCache.put(cacheKey, cached);
 		}
 		return cached;

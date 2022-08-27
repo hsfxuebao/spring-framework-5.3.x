@@ -62,6 +62,7 @@ public abstract class AopConfigUtils {
 		// 这里面三种都是 自动代理创建器，会根据情况选择一个自动代理创建器加载。
 		// 需要注意的是，自动代理创建器只能加载一种，若已经加载一种，则会根据优先级选择优先级高的重新加载
 		// 事务使用
+		// 下标越大，优先级越高
 		APC_PRIORITY_LIST.add(InfrastructureAdvisorAutoProxyCreator.class);
 		APC_PRIORITY_LIST.add(AspectJAwareAdvisorAutoProxyCreator.class);
 		APC_PRIORITY_LIST.add(AnnotationAwareAspectJAutoProxyCreator.class);
@@ -134,6 +135,7 @@ public abstract class AopConfigUtils {
 		if (registry.containsBeanDefinition(AUTO_PROXY_CREATOR_BEAN_NAME)) {
 			BeanDefinition apcDefinition = registry.getBeanDefinition(AUTO_PROXY_CREATOR_BEAN_NAME);
 			if (!cls.getName().equals(apcDefinition.getBeanClassName())) {
+				// APC_PRIORITY_LIST 下标越大，优先级越高
 				int currentPriority = findPriorityForClass(apcDefinition.getBeanClassName());
 				int requiredPriority = findPriorityForClass(cls);
 				if (currentPriority < requiredPriority) {

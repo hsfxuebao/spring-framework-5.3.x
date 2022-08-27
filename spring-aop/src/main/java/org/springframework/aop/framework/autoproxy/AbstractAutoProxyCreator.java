@@ -276,7 +276,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 			}
 			// todo 获取代理增强点
 			Object[] specificInterceptors = getAdvicesAndAdvisorsForBean(beanClass, beanName, targetSource);
-			// 创建代理类
+			// todo 创建代理类
 			Object proxy = createProxy(beanClass, beanName, specificInterceptors, targetSource);
 			this.proxyTypes.put(cacheKey, proxy.getClass());
 			return proxy;
@@ -354,7 +354,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 		}
 
 		// Create proxy if we have advice.
-		// 如果有切面的通知方法切入这个对象，就给对象创建代理
+		// todo 如果有切面的通知方法切入这个对象，就给对象创建代理
 		Object[] specificInterceptors = getAdvicesAndAdvisorsForBean(bean.getClass(), beanName, null);
 		if (specificInterceptors != DO_NOT_PROXY) {
 			this.advisedBeans.put(cacheKey, Boolean.TRUE);
@@ -454,7 +454,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	 */
 	// 这里的入参 beanClass ：当前BeanClass,
 	// beanName : 当前BeanName
-	// specificInterceptors ： 中篇中寻找出来的 Advisor
+	// specificInterceptors ： 寻找出来的 Advisor
 	// targetSource : SingletonTargetSource 目标类是单例 拥有给定对象的TargetSource接口的实现。 这是Spring AOP框架使用的TargetSource接口的默认实现。 通常不需要在应用程序代码中创建此类的对象。
 	protected Object createProxy(Class<?> beanClass, @Nullable String beanName,
 			@Nullable Object[] specificInterceptors, TargetSource targetSource) {
@@ -574,10 +574,10 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 					" common interceptors and " + nrOfSpecificInterceptors + " specific interceptors");
 		}
 
-		// todo
+
 		Advisor[] advisors = new Advisor[allInterceptors.size()];
 		for (int i = 0; i < allInterceptors.size(); i++) {
-			// 拦截器进行转化为 Advisor
+			// todo 拦截器进行转化为 Advisor
 			advisors[i] = this.advisorAdapterRegistry.wrap(allInterceptors.get(i));
 		}
 		return advisors;

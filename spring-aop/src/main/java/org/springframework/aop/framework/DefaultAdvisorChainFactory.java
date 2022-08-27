@@ -59,12 +59,17 @@ public class DefaultAdvisorChainFactory implements AdvisorChainFactory, Serializ
 		Class<?> actualClass = (targetClass != null ? targetClass : method.getDeclaringClass());
 		Boolean hasIntroductions = null;
 
+		// 遍历所有的 Advisor，这里的 Advisor 是 ProxyFactory 中保存的
 		for (Advisor advisor : advisors) {
 			// 我们这里的Advisor 都是 PointcutAdvisor 所以这里只分析该内容
+			/******* 1. PointcutAdvisor 顾问类型的处理 *******/
+			// 如果是切点顾问
 			if (advisor instanceof PointcutAdvisor) {
 				// Add it conditionally.
 				PointcutAdvisor pointcutAdvisor = (PointcutAdvisor) advisor;
+				// 如果经过 预过滤 || 当前顾问 匹配当前类
 				if (config.isPreFiltered() || pointcutAdvisor.getPointcut().getClassFilter().matches(actualClass)) {
+					// 判断当前方法是否匹配
 					MethodMatcher mm = pointcutAdvisor.getPointcut().getMethodMatcher();
 					boolean match;
 					if (mm instanceof IntroductionAwareMethodMatcher) {
@@ -77,31 +82,42 @@ public class DefaultAdvisorChainFactory implements AdvisorChainFactory, Serializ
 						match = mm.matches(method, actualClass);
 					}
 					// todo 把增强器转成 拦截器，如果是通知方法 如果代理规则与当前类匹配
+					// 如果方法也匹配，则认为当前顾问适用于当前方法
 					if (match) {
 						// todo 进行转化注册
+						// 获取顾问中的 方法拦截器。这里会将部分不合适的类型转换为合适的拦截器
 						MethodInterceptor[] interceptors = registry.getInterceptors(advisor);
+						// runtime 为 true， 表明是动态调用，即每次调用都需要执行一次判断。
 						if (mm.isRuntime()) {
 							// Creating a new object instance in the getInterceptors() method
 							// isn't a problem as we normally cache created chains.
+							// 动态调用将 拦截器包装成 InterceptorAndDynamicMethodMatcher
 							for (MethodInterceptor interceptor : interceptors) {
 								// 封装成 InterceptorAndDynamicMethodMatcher
 								interceptorList.add(new InterceptorAndDynamicMethodMatcher(interceptor, mm));
 							}
 						}
 						else {
+							// 否则直接添加
 							interceptorList.addAll(Arrays.asList(interceptors));
 						}
 					}
 				}
 			}
 			else if (advisor instanceof IntroductionAdvisor) {
+				/******* 2. IntroductionAdvisor 顾问类型的处理 *******/
+				// 如果是引介顾问类型
 				IntroductionAdvisor ia = (IntroductionAdvisor) advisor;
+				// 预过滤 || 调用类匹配
 				if (config.isPreFiltered() || ia.getClassFilter().matches(actualClass)) {
+					// 直接添加
 					Interceptor[] interceptors = registry.getInterceptors(advisor);
 					interceptorList.addAll(Arrays.asList(interceptors));
 				}
 			}
 			else {
+				/******* 3. 其他顾问类型的处理 *******/
+				// 直接添加
 				Interceptor[] interceptors = registry.getInterceptors(advisor);
 				interceptorList.addAll(Arrays.asList(interceptors));
 			}

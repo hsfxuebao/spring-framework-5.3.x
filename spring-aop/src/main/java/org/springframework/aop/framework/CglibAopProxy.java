@@ -85,6 +85,7 @@ import org.springframework.util.ReflectionUtils;
 class CglibAopProxy implements AopProxy, Serializable {
 
 	// Constants for CGLIB callback array indices
+	// Callback 数组的下标
 	private static final int AOP_PROXY = 0;
 	private static final int INVOKE_TARGET = 1;
 	private static final int NO_OVERRIDE = 2;
@@ -202,6 +203,7 @@ class CglibAopProxy implements AopProxy, Serializable {
 				types[x] = callbacks[x].getClass();
 			}
 			// fixedInterceptorMap only populated at this point, after getCallbacks call above
+			// todo ProxyCallbackFilter
 			enhancer.setCallbackFilter(new ProxyCallbackFilter(
 					this.advised.getConfigurationOnlyCopy(), this.fixedInterceptorMap, this.fixedInterceptorOffset));
 			enhancer.setCallbackTypes(types);
@@ -303,8 +305,11 @@ class CglibAopProxy implements AopProxy, Serializable {
 		// Choose a "straight to target" interceptor. (used for calls that are
 		// unadvised but can return this). May be required to expose the proxy.
 		Callback targetInterceptor;
-		// 根据是否包括和 师傅静态，来生成不同的拦截器
+		// 如果需要暴露代理类，则需要在执行前将代理类保存到 AOP上下文 中，
+		// 而 StaticUnadvisedExposedInterceptor 和 DynamicUnadvisedExposedInterceptor 中完成了此操作。
+		// 根据是否包括和 是否静态，来生成不同的拦截器
 		if (exposeProxy) {
+			// 如果是静态,直接将 getTarget 对象传入，因为对象不可变。否则传入 TargetSource 由拦截器在内部获取。
 			targetInterceptor = (isStatic ?
 					new StaticUnadvisedExposedInterceptor(this.advised.getTargetSource().getTarget()) :
 					new DynamicUnadvisedExposedInterceptor(this.advised.getTargetSource()));
@@ -477,11 +482,13 @@ class CglibAopProxy implements AopProxy, Serializable {
 		public Object intercept(Object proxy, Method method, Object[] args, MethodProxy methodProxy) throws Throwable {
 			Object oldProxy = null;
 			try {
+				// 切换当前AOP上下文的 代理类对象
 				oldProxy = AopContext.setCurrentProxy(proxy);
 				Object retVal = invokeMethod(this.target, method, args, methodProxy);
 				return processReturnType(proxy, this.target, method, retVal);
 			}
 			finally {
+				// 重置回上下文对象
 				AopContext.setCurrentProxy(oldProxy);
 			}
 		}
@@ -693,6 +700,7 @@ class CglibAopProxy implements AopProxy, Serializable {
 			Object oldProxy = null;
 			boolean setProxyContext = false;
 			Object target = null;
+			// 获取目标数据
 			TargetSource targetSource = this.advised.getTargetSource();
 			try {
 				// exposeProxy 暴露代理对象，使用了代理对象就有了增强功能
@@ -702,29 +710,37 @@ class CglibAopProxy implements AopProxy, Serializable {
 					setProxyContext = true;
 				}
 				// Get as late as possible to minimize the time we "own" the target, in case it comes from a pool...
+				// 获取目标对象
 				target = targetSource.getTarget();
 				Class<?> targetClass = (target != null ? target.getClass() : null);
 				// todo 拦截器链
 				// 责任链模式在执行目标方法前后执行其他的通知方法
 				// chain是AOP后置处理器在第一次的时候生成好的5个增强器，然后封装成的MethodInterceptor
+				// 1. 获取 适用于当前类的当前方法的 获取拦截器和动态拦截建议
 				List<Object> chain = this.advised.getInterceptorsAndDynamicInterceptionAdvice(method, targetClass);
 				Object retVal;
 				// Check whether we only have one InvokerInterceptor: that is,
 				// no real advice, but just reflective invocation of the target.
+				// 如果没有建议链则说明对该方法不需要增强，直接调用即可
 				if (chain.isEmpty() && CglibMethodInvocation.isMethodProxyCompatible(method)) {
 					// We can skip creating a MethodInvocation: just invoke the target directly.
 					// Note that the final invoker must be an InvokerInterceptor, so we know
 					// it does nothing but a reflective operation on the target, and no hot
 					// swapping or fancy proxying.
+					// 即当前 args 的参数类型可能与实际方法调用的类型有些区别，这里转换成实际方法的参数类型。
+					// 特别是，如果给定的可变参数数组与方法中声明的可变参数的数组类型不匹配。
 					Object[] argsToUse = AopProxyUtils.adaptArgumentsIfNecessary(method, args);
+					// 调用目标类的目标方法
 					retVal = invokeMethod(target, method, argsToUse, methodProxy);
 				}
 				else {
 					// We need to create a method invocation...
 					// 创建一个方法执行，拦截器链在这里执行
 					// CglibMethodInvocation [FilterChain(维护索引)] 5个MethodInterceptor就是Filter
+					// 2. 创建一个 方法调用类，里面封装了相关信息，然后通过 proceed 方法调用
 					retVal = new CglibMethodInvocation(proxy, target, method, args, targetClass, chain, methodProxy).proceed();
 				}
+				// 处理返回值。 即，如果返回值还是 target。则替换为 代理的proxy
 				retVal = processReturnType(proxy, target, method, retVal);
 				return retVal;
 			}
@@ -778,7 +794,7 @@ class CglibAopProxy implements AopProxy, Serializable {
 		@Nullable
 		public Object proceed() throws Throwable {
 			try {
-				//
+				// todo 调用父类的方法
 				return super.proceed();
 			}
 			catch (RuntimeException ex) {
@@ -889,10 +905,12 @@ class CglibAopProxy implements AopProxy, Serializable {
 		 */
 		@Override
 		public int accept(Method method) {
+			// 1. 如果当前方法被 final 修饰，则不代理该方法
 			if (AopUtils.isFinalizeMethod(method)) {
 				logger.trace("Found finalize() method - using NO_OVERRIDE");
 				return NO_OVERRIDE;
 			}
+			// 2. 如果当前方法不透明 && 该方法是 Advised 接口声明的方法
 			if (!this.advised.isOpaque() && method.getDeclaringClass().isInterface() &&
 					method.getDeclaringClass().isAssignableFrom(Advised.class)) {
 				if (logger.isTraceEnabled()) {
@@ -901,6 +919,7 @@ class CglibAopProxy implements AopProxy, Serializable {
 				return DISPATCH_ADVISED;
 			}
 			// We must always proxy equals, to direct calls to this.
+			// 3. equals 方法
 			if (AopUtils.isEqualsMethod(method)) {
 				if (logger.isTraceEnabled()) {
 					logger.trace("Found 'equals' method: " + method);
@@ -908,21 +927,26 @@ class CglibAopProxy implements AopProxy, Serializable {
 				return INVOKE_EQUALS;
 			}
 			// We must always calculate hashCode based on the proxy.
+			// 4. hashcode 方法
 			if (AopUtils.isHashCodeMethod(method)) {
 				if (logger.isTraceEnabled()) {
 					logger.trace("Found 'hashCode' method: " + method);
 				}
 				return INVOKE_HASHCODE;
 			}
+			// 获取代理目标类的 Class
 			Class<?> targetClass = this.advised.getTargetClass();
 			// Proxy is not yet available, but that shouldn't matter.
+			// 获取适用于当前类的 拦截器和动态拦截建议
 			List<?> chain = this.advised.getInterceptorsAndDynamicInterceptionAdvice(method, targetClass);
 			boolean haveAdvice = !chain.isEmpty();
 			boolean exposeProxy = this.advised.isExposeProxy();
 			boolean isStatic = this.advised.getTargetSource().isStatic();
 			boolean isFrozen = this.advised.isFrozen();
+			// 5. 如果存在适用于当前类的拦截器和建议 || 配置没有被冻结
 			if (haveAdvice || !isFrozen) {
 				// If exposing the proxy, then AOP_PROXY must be used.
+				// 5.1 暴露代理类
 				if (exposeProxy) {
 					if (logger.isTraceEnabled()) {
 						logger.trace("Must expose proxy on advised method: " + method);
@@ -931,6 +955,9 @@ class CglibAopProxy implements AopProxy, Serializable {
 				}
 				// Check to see if we have fixed interceptor to serve this method.
 				// Else use the AOP_PROXY.
+				// 5.2 类为静态 && 配置冻结 && 固定拦截器中保存了该方法的配置
+				// 检查是否有固定的拦截器来服务这个方法, 这里使用了 fixedInterceptorMap 做了一些优化
+				// fixedInterceptorMap  key 为 Method， value 为 Integer 保存了拦截器下标。这里针对某些方法固定使用某个拦截器，不需要再动态匹配。
 				if (isStatic && isFrozen && this.fixedInterceptorMap.containsKey(method)) {
 					if (logger.isTraceEnabled()) {
 						logger.trace("Method has advice and optimizations are enabled: " + method);
@@ -943,18 +970,22 @@ class CglibAopProxy implements AopProxy, Serializable {
 					if (logger.isTraceEnabled()) {
 						logger.trace("Unable to apply any optimizations to advised method: " + method);
 					}
+					// 5.3 否则还是使用 AOP_PROXY
 					return AOP_PROXY;
 				}
 			}
+			// 6. 到这里说明当前方法没有建议 && 配置冻结
 			else {
 				// See if the return type of the method is outside the class hierarchy of the target type.
 				// If so we know it never needs to have return type massage and can use a dispatcher.
 				// If the proxy is being exposed, then must use the interceptor the correct one is already
 				// configured. If the target is not static, then we cannot use a dispatcher because the
 				// target needs to be explicitly released after the invocation.
+				// 6.1. 暴露当前代理类 && 代理类不是静态
 				if (exposeProxy || !isStatic) {
 					return INVOKE_TARGET;
 				}
+				// 6.2. 如果方法返回类型还是代理类类型
 				Class<?> returnType = method.getReturnType();
 				if (targetClass != null && returnType.isAssignableFrom(targetClass)) {
 					if (logger.isTraceEnabled()) {
@@ -968,6 +999,7 @@ class CglibAopProxy implements AopProxy, Serializable {
 						logger.trace("Method return type ensures 'this' cannot be returned - " +
 								"using DISPATCH_TARGET: " + method);
 					}
+					// 6.3 DISPATCH_TARGET
 					return DISPATCH_TARGET;
 				}
 			}

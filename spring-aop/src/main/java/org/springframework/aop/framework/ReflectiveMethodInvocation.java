@@ -170,6 +170,7 @@ public class ReflectiveMethodInvocation implements ProxyMethodInvocation, Clonea
 		// 获取下一个要调用的增强拦截器
 		Object interceptorOrInterceptionAdvice =
 				this.interceptorsAndDynamicMethodMatchers.get(++this.currentInterceptorIndex);
+		// 如果是动态拦截器
 		if (interceptorOrInterceptionAdvice instanceof InterceptorAndDynamicMethodMatcher) {
 			// Evaluate dynamic method matcher here: static part will already have
 			// been evaluated and found to match.

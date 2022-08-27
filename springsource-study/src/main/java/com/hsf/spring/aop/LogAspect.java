@@ -1,6 +1,7 @@
 package com.hsf.spring.aop;
 
 import org.aspectj.lang.JoinPoint;
+import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.*;
 import org.springframework.stereotype.Component;
 
@@ -20,8 +21,6 @@ import java.util.Arrays;
  * }finally{
  *     后置通知
  * }
- *
- *
  */
 @Component  //切面也是容器中的组件
 @Aspect //说明这是切面
@@ -59,5 +58,20 @@ public class LogAspect {
 	public void logError(JoinPoint joinPoint,Exception e){
 		String name = joinPoint.getSignature().getName();
 		System.out.println("logError()==>"+name+"....【args: "+ Arrays.asList(joinPoint.getArgs()) +"】【exception: "+e+"】");
+	}
+
+	@Around("execution(* com.hsf.spring.aop.HelloService.sayHello(..))")
+	public void around(ProceedingJoinPoint joinPoint) {
+		try {
+			System.out.println("【环绕前置通知】 around before");
+			joinPoint.proceed();    // 放行切点的方法，不放行则会阻塞调用
+			System.out.println("【环绕返回通知】around after");
+		} catch (Throwable throwable) {
+			throwable.printStackTrace();
+			System.out.println("【环绕异常通知】 around throwable");
+		}finally {
+			System.out.println("【环绕后置通知】 around throwable");
+		}
+
 	}
 }

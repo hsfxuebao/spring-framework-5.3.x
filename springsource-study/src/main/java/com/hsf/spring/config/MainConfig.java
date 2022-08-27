@@ -24,7 +24,7 @@ import com.hsf.spring.beans.Person;
 //@Import({Person.class}) // 导入某个bean,默认使用无参构造器创建对象
 //@Import(value = {MainConfig.MyImportBeanDefinitionRegistrar.class})
 @ComponentScan("com.hsf.spring")  // 默认扫描当前路径下的bean
-//@EnableAspectJAutoProxy
+@EnableAspectJAutoProxy
 public class MainConfig {
 
 
@@ -33,24 +33,6 @@ public class MainConfig {
 		Person person = new Person();
 		person.setName("张三");
 		return person;
-	}
-
-	static class MyImportBeanDefinitionRegistrar implements ImportBeanDefinitionRegistrar {
-
-
-		@Override
-		public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata,
-				BeanDefinitionRegistry registry) {
-
-			RootBeanDefinition beanDefinition = new RootBeanDefinition();
-			beanDefinition.setBeanClass(Cat.class);
-			//	catDefinition.setInitMethodName("aaa");
-			// 可以声明定义信息，包括我需要自动装配什么？
-			//	catDefinition.setInstanceSupplier(()-> new Cat());
-			// Spring 这个实例的类型，名字
-			registry.registerBeanDefinition("myCat", beanDefinition);
-
-		}
 	}
 
 

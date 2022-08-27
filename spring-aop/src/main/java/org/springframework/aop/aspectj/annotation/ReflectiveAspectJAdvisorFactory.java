@@ -139,7 +139,7 @@ public class ReflectiveAspectJAdvisorFactory extends AbstractAspectJAdvisorFacto
 
 		// 收集所有的增强器
 		List<Advisor> advisors = new ArrayList<>();
-		// todo  getAdvisorMethods(aspectClass) 获取 aspectClass 中没有被 @PointCut 注解修饰的方法
+		// todo  getAdvisorMethods(aspectClass) 获取 aspectClass 中没被 @PointCut 注解修饰的方法
 		for (Method method : getAdvisorMethods(aspectClass)) {
 			// Prior to Spring Framework 5.2.7, advisors.size() was supplied as the declarationOrderInAspect
 			// to getAdvisor(...) to represent the "current position" in the declared methods list.
@@ -232,7 +232,8 @@ public class ReflectiveAspectJAdvisorFactory extends AbstractAspectJAdvisorFacto
 
 	@Nullable
 	private AspectJExpressionPointcut getPointcut(Method candidateAdviceMethod, Class<?> candidateAspectClass) {
-		// 获取方法上的注解，包括 Pointcut.class, Around.class, Before.class, After.class, AfterReturning.class, AfterThrowing.class
+		// todo 获取方法上的注解，
+		//  包括 Pointcut.class, Around.class, Before.class, After.class, AfterReturning.class, AfterThrowing.class
 		AspectJAnnotation<?> aspectJAnnotation =
 				AbstractAspectJAdvisorFactory.findAspectJAnnotationOnMethod(candidateAdviceMethod);
 		if (aspectJAnnotation == null) {

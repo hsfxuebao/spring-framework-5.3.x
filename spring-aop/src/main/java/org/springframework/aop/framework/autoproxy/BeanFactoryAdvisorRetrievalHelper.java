@@ -71,7 +71,8 @@ public class BeanFactoryAdvisorRetrievalHelper {
 		if (advisorNames == null) {
 			// Do not initialize FactoryBeans here: We need to leave all regular beans
 			// uninitialized to let the auto-proxy creator apply to them!
-			// 注释： 不要在这里初始化FactoryBeans：我们需要保留所有未初始化的常规bean，以使自动代理创建者对其应用！  个人理解是防止有的FactoryBean可能会被增强代理，而在这里初始化，则会没有办法进行代理
+			// 注释： 不要在这里初始化FactoryBeans：我们需要保留所有未初始化的常规bean，以使自动代理创建者对其应用！
+			// 个人理解是防止有的FactoryBean可能会被增强代理，而在这里初始化，则会没有办法进行代理
 			// 从 Spring 中获取 Advisor 类型的 beanname 。这里获取到的一般都是硬编码注入的 Advisors
 			advisorNames = BeanFactoryUtils.beanNamesForTypeIncludingAncestors(
 					this.beanFactory, Advisor.class, true, false);

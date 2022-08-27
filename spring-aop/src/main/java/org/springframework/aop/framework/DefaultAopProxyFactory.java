@@ -52,9 +52,15 @@ public class DefaultAopProxyFactory implements AopProxyFactory, Serializable {
 	private static final long serialVersionUID = 7930414337282325166L;
 
 
+	/**
+	 * 如果目标对象实现了接口，默认会采用JDK动态代理实现AOP
+	 * 如果目标对象实现了接口，可以强制使用CGLIB动态代理实现AOP
+	 * 如果目标对象没有实现接口，必须采用CGLIB代理，Spring会自动在JDK动态代理和CGLIB代理之前切换。
+	 */
 	@Override
 	// 这里的参数 AdvisedSupport config 即是之前创建的ProxyFactory。这里又将其传递给了AopProxy
 	public AopProxy createAopProxy(AdvisedSupport config) throws AopConfigException {
+
 		if (!NativeDetector.inNativeImage() &&
 				(config.isOptimize() || config.isProxyTargetClass() || hasNoUserSuppliedProxyInterfaces(config))) {
 			Class<?> targetClass = config.getTargetClass();
