@@ -128,11 +128,15 @@ public class HandlerMethodArgumentResolverComposite implements HandlerMethodArgu
 	 */
 	@Nullable
 	private HandlerMethodArgumentResolver getArgumentResolver(MethodParameter parameter) {
+		// 先看缓存中有没有
 		HandlerMethodArgumentResolver result = this.argumentResolverCache.get(parameter);
 		if (result == null) {
+			// 27个参数解析器 遍历执行
 			for (HandlerMethodArgumentResolver resolver : this.argumentResolvers) {
+				//
 				if (resolver.supportsParameter(parameter)) {
 					result = resolver;
+					// 支持这种参数的解析器也会被放到缓存中argumentResolverCache
 					this.argumentResolverCache.put(parameter, result);
 					break;
 				}

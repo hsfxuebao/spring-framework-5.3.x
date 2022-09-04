@@ -46,7 +46,7 @@ import org.springframework.lang.Nullable;
  * @author Juergen Hoeller
  * @see org.springframework.web.servlet.mvc.SimpleControllerHandlerAdapter
  * @see org.springframework.web.servlet.handler.SimpleServletHandlerAdapter
- */
+ */  // 策略模式+适配器模式
 public interface HandlerAdapter {
 
 	/**
@@ -74,7 +74,7 @@ public interface HandlerAdapter {
 	 * model data, or {@code null} if the request has been handled directly
 	 * @throws Exception in case of errors
 	 */
-	@Nullable
+	@Nullable  // 适配器模式,适配的过程，把request、response 和handler链接起来进行处理，处理完成得到ModelAndView（页面信息）
 	ModelAndView handle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception;
 
 	/**

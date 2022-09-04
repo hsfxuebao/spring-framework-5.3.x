@@ -58,4 +58,5 @@ settings.gradle.projectsLoaded {
 }
 include 'springsource-study'
 include 'springsource-study'
+include 'springmvc-source'
 

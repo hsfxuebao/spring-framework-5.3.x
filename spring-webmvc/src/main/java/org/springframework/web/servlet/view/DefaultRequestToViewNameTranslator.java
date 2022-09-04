@@ -57,19 +57,20 @@ import org.springframework.web.util.UrlPathHelper;
  */
 public class DefaultRequestToViewNameTranslator implements RequestToViewNameTranslator {
 
+	// 分隔符
 	private static final String SLASH = "/";
 
-
+	// 师图前缀
 	private String prefix = "";
-
+	// 师图后缀
 	private String suffix = "";
-
+	// 默认的分隔符
 	private String separator = SLASH;
-
+	// 如果首字母是分隔符 是否需要去除，默认true
 	private boolean stripLeadingSlash = true;
-
+ 	// 如果尾字符 是分隔符 是否需要去除 默认是true
 	private boolean stripTrailingSlash = true;
-
+	// 如果请求路径包含扩展名是否需要去除，默认是true
 	private boolean stripExtension = true;
 
 
@@ -175,6 +176,7 @@ public class DefaultRequestToViewNameTranslator implements RequestToViewNameTran
 	 */
 	@Override
 	public String getViewName(HttpServletRequest request) {
+		// todo
 		String path = ServletRequestPathUtils.getCachedPathValue(request);
 		return (this.prefix + transformPath(path) + this.suffix);
 	}

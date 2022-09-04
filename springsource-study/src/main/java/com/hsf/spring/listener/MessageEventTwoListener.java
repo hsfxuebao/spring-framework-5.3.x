@@ -4,7 +4,7 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 
 /**
- * @author haoshaofei <haoshaofei@kuaishou.com>
+ * @author hsfxuebao
  * Created on 2022-08-24
  */
 @Component

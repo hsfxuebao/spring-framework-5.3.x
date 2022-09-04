@@ -308,9 +308,11 @@ public class RedirectView extends AbstractUrlBasedView implements SmartView {
 		targetUrl = updateTargetUrl(targetUrl, model, request, response);
 
 		// Save flash attributes
+		// 保存闪存数据
 		RequestContextUtils.saveOutputFlashMap(targetUrl, request, response);
 
 		// Redirect
+		// 重定向
 		sendRedirect(request, response, targetUrl, this.http10Compatible);
 	}
 
@@ -624,6 +626,7 @@ public class RedirectView extends AbstractUrlBasedView implements SmartView {
 			}
 			else {
 				// Send status code 302 by default.
+				// 重定向
 				response.sendRedirect(encodedURL);
 			}
 		}

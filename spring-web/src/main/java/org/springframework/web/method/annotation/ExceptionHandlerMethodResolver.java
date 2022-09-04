@@ -73,8 +73,10 @@ public class ExceptionHandlerMethodResolver {
 	 * @param handlerType the type to introspect
 	 */
 	public ExceptionHandlerMethodResolver(Class<?> handlerType) {
+		// 扫描当前这个ControllerAdvice 中所有标注了@ExceptionHandler 的方法
 		for (Method method : MethodIntrospector.selectMethods(handlerType, EXCEPTION_HANDLER_METHODS)) {
 			for (Class<? extends Throwable> exceptionType : detectExceptionMappings(method)) {
+				// todo
 				addExceptionMapping(exceptionType, method);
 			}
 		}
@@ -108,6 +110,7 @@ public class ExceptionHandlerMethodResolver {
 		result.addAll(Arrays.asList(ann.value()));
 	}
 
+	// 每一个方能处理什么类型的异常，缓存到Map中
 	private void addExceptionMapping(Class<? extends Throwable> exceptionType, Method method) {
 		Method oldMethod = this.mappedMethods.put(exceptionType, method);
 		if (oldMethod != null && !oldMethod.equals(method)) {

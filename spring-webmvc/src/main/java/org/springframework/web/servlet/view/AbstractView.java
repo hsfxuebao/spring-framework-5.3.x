@@ -301,6 +301,7 @@ public abstract class AbstractView extends WebApplicationObjectSupport implement
 	 * Delegates to renderMergedOutputModel for the actual rendering.
 	 * @see #renderMergedOutputModel
 	 */
+	// 父类的模板方法规定了render 的步骤
 	@Override
 	public void render(@Nullable Map<String, ?> model, HttpServletRequest request,
 			HttpServletResponse response) throws Exception {
@@ -311,8 +312,11 @@ public abstract class AbstractView extends WebApplicationObjectSupport implement
 					(this.staticAttributes.isEmpty() ? "" : ", static attributes " + this.staticAttributes));
 		}
 
+		// 准备model数据 将要用到的属性放入到mergedModel  中
 		Map<String, Object> mergedModel = createMergedOutputModel(model, request, response);
+		// 准备 Response
 		prepareResponse(request, response);
+		// todo 渲染模型 处理页面跳转。同时将 mergedModel  保存到request中
 		renderMergedOutputModel(mergedModel, getRequestToExpose(request), response);
 	}
 
@@ -440,10 +444,12 @@ public abstract class AbstractView extends WebApplicationObjectSupport implement
 			HttpServletRequest request) throws Exception {
 
 		model.forEach((name, value) -> {
+			// 如果有值就是添加到请求域中
 			if (value != null) {
 				request.setAttribute(name, value);
 			}
 			else {
+				// 否则就是从请求域 中移除
 				request.removeAttribute(name);
 			}
 		});

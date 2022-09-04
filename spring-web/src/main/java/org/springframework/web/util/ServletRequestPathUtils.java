@@ -133,6 +133,7 @@ public abstract class ServletRequestPathUtils {
 		// The lookupPath is re-resolved or cleared per HandlerMapping.
 		// So check for lookupPath first.
 
+		// request域中会放一个，把request的请求路径直接拿来当要去的页面地址
 		String lookupPath = (String) request.getAttribute(UrlPathHelper.PATH_ATTRIBUTE);
 		if (lookupPath != null) {
 			return lookupPath;
@@ -158,8 +159,10 @@ public abstract class ServletRequestPathUtils {
 	 * @return the full request mapping path as a String
 	 */
 	public static String getCachedPathValue(ServletRequest request) {
+		// UrlPathHelper.class.getName() + ".PATH"
 		Object path = getCachedPath(request);
 		if (path instanceof PathContainer) {
+			// UrlPathHelper解析
 			String value = ((PathContainer) path).value();
 			path = UrlPathHelper.defaultInstance.removeSemicolonContent(value);
 		}

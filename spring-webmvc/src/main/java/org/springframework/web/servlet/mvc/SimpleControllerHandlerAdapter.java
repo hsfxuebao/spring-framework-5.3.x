@@ -54,9 +54,11 @@ public class SimpleControllerHandlerAdapter implements HandlerAdapter {
 	@Override
 	@SuppressWarnings("deprecation")
 	public long getLastModified(HttpServletRequest request, Object handler) {
+		// 如果handler 是 LastModified 的 实现类。则直接调用 handler 的 getLastModified 方法
 		if (handler instanceof LastModified) {
 			return ((LastModified) handler).getLastModified(request);
 		}
+		// 否则返回-1
 		return -1L;
 	}
 

@@ -73,6 +73,7 @@ import org.springframework.web.util.pattern.PathPatternParser;
  * @author Sam Brannen
  * @since 3.1
  */
+// HandlerMapping中会有一个Map  /hello --> xxxController.xx()
 public class RequestMappingHandlerMapping extends RequestMappingInfoHandlerMapping
 		implements MatchableHandlerMapping, EmbeddedValueResolverAware {
 
@@ -187,6 +188,7 @@ public class RequestMappingHandlerMapping extends RequestMappingInfoHandlerMappi
 	@Override
 	@SuppressWarnings("deprecation")
 	public void afterPropertiesSet() {
+		// 进行 RequestMapping 的配置
 		this.config = new RequestMappingInfo.BuilderConfiguration();
 		this.config.setTrailingSlashMatch(useTrailingSlashMatch());
 		this.config.setContentNegotiationManager(getContentNegotiationManager());
@@ -202,6 +204,7 @@ public class RequestMappingHandlerMapping extends RequestMappingInfoHandlerMappi
 			this.config.setPathMatcher(getPathMatcher());
 		}
 
+		// 调用父类的  afterPropertiesSet 方法。
 		super.afterPropertiesSet();
 	}
 
@@ -264,6 +267,7 @@ public class RequestMappingHandlerMapping extends RequestMappingInfoHandlerMappi
 	 * <p>Expects a handler to have either a type-level @{@link Controller}
 	 * annotation or a type-level @{@link RequestMapping} annotation.
 	 */
+	// RequestMappingHandlerMapping 中 isHandler 的实现
 	@Override
 	protected boolean isHandler(Class<?> beanType) {
 		return (AnnotatedElementUtils.hasAnnotation(beanType, Controller.class) ||
@@ -281,17 +285,24 @@ public class RequestMappingHandlerMapping extends RequestMappingInfoHandlerMappi
 	@Override
 	@Nullable
 	protected RequestMappingInfo getMappingForMethod(Method method, Class<?> handlerType) {
+		// 转换成 RequestMappingInfo ，如果方法没有被  @RequestMapping 注解修饰，则会返回null
+		// 解析出来方法上  @RequestMapping  注解的各种信息
+		// todo 为每一个方法尝试创建 RequestMappingInfo
 		RequestMappingInfo info = createRequestMappingInfo(method);
 		if (info != null) {
+			// 解析出来 bean 上  @RequestMapping  注解的各种信息
 			RequestMappingInfo typeInfo = createRequestMappingInfo(handlerType);
 			if (typeInfo != null) {
+				// 合并类和方法的 @RequestMapping 注解信息
 				info = typeInfo.combine(info);
 			}
+			// 获取前缀，拼接前缀
 			String prefix = getPathPrefix(handlerType);
 			if (prefix != null) {
 				info = RequestMappingInfo.paths(prefix).options(this.config).build().combine(info);
 			}
 		}
+		// 返回信息
 		return info;
 	}
 
@@ -316,11 +327,14 @@ public class RequestMappingHandlerMapping extends RequestMappingInfoHandlerMappi
 	 * @see #getCustomTypeCondition(Class)
 	 * @see #getCustomMethodCondition(Method)
 	 */
-	@Nullable
+	@Nullable // 所有标注了 RequestMapping 注解的方法拿来封装
 	private RequestMappingInfo createRequestMappingInfo(AnnotatedElement element) {
+		// 获取当前方法上的  @RequestMapping 注解
 		RequestMapping requestMapping = AnnotatedElementUtils.findMergedAnnotation(element, RequestMapping.class);
+		// 获取自定义的方法条件
 		RequestCondition<?> condition = (element instanceof Class ?
 				getCustomTypeCondition((Class<?>) element) : getCustomMethodCondition((Method) element));
+		// 这里可以看到 如果 requestMapping  = null，则会直接返回null，否则会封装成一个 RequestMappingInfo (包含 @RequestMapping 注解的各种参数) 返回。
 		return (requestMapping != null ? createRequestMappingInfo(requestMapping, condition) : null);
 	}
 

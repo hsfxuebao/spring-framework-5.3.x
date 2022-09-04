@@ -209,6 +209,8 @@ public class ServletWebRequest extends ServletRequestAttributes implements Nativ
 	@Override
 	public boolean checkNotModified(@Nullable String etag, long lastModifiedTimestamp) {
 		HttpServletResponse response = getResponse();
+		// notModified  为true 标志没有被修改，默认false
+		// 如果 notModified  已经true || 返回状态码已经不是200直接返回 notModified
 		if (this.notModified || (response != null && HttpStatus.OK.value() != response.getStatus())) {
 			return this.notModified;
 		}
@@ -216,19 +218,24 @@ public class ServletWebRequest extends ServletRequestAttributes implements Nativ
 		// Evaluate conditions in order of precedence.
 		// See https://tools.ietf.org/html/rfc7232#section-6
 
+		// 解析校验 If-Unmodified-Since 请求头。这个请求头和  If-Modified-Since 请求头相反
 		if (validateIfUnmodifiedSince(lastModifiedTimestamp)) {
 			if (this.notModified && response != null) {
+				// 设置状态码 304，并返回 notModified
 				response.setStatus(HttpStatus.PRECONDITION_FAILED.value());
 			}
 			return this.notModified;
 		}
 
+		// 校验 If-None-Match 请求头。这是针对 Etag 缓存。
 		boolean validated = validateIfNoneMatch(etag);
 		if (!validated) {
+			// 校验 If-Modified-Since 请求头
 			validateIfModifiedSince(lastModifiedTimestamp);
 		}
 
 		// Update response
+		// 更新 Response。包括状态码等信息
 		if (response != null) {
 			boolean isHttpGetOrHead = SAFE_METHODS.contains(getRequest().getMethod());
 			if (this.notModified) {
@@ -261,6 +268,7 @@ public class ServletWebRequest extends ServletRequestAttributes implements Nativ
 		return true;
 	}
 
+	// 解析校验 If-Modified-Since 请求头
 	private boolean validateIfNoneMatch(@Nullable String etag) {
 		if (!StringUtils.hasLength(etag)) {
 			return false;

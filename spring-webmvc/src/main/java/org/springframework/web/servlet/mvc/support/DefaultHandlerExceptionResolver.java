@@ -139,6 +139,7 @@ import org.springframework.web.servlet.handler.AbstractHandlerExceptionResolver;
  * @since 3.0
  * @see org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler
  */
+// 默认的异常解析器，直接response.sendError tomcat默认错误页
 public class DefaultHandlerExceptionResolver extends AbstractHandlerExceptionResolver {
 
 	/**
@@ -185,6 +186,7 @@ public class DefaultHandlerExceptionResolver extends AbstractHandlerExceptionRes
 				return handleMissingPathVariable(
 						(MissingPathVariableException) ex, request, response, handler);
 			}
+			// 缺少请求参数
 			else if (ex instanceof MissingServletRequestParameterException) {
 				return handleMissingServletRequestParameter(
 						(MissingServletRequestParameterException) ex, request, response, handler);
@@ -343,6 +345,7 @@ public class DefaultHandlerExceptionResolver extends AbstractHandlerExceptionRes
 	protected ModelAndView handleMissingServletRequestParameter(MissingServletRequestParameterException ex,
 			HttpServletRequest request, HttpServletResponse response, @Nullable Object handler) throws IOException {
 
+		// 直接sendError tomcat展示错误页
 		response.sendError(HttpServletResponse.SC_BAD_REQUEST, ex.getMessage());
 		return new ModelAndView();
 	}

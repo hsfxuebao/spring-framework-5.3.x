@@ -564,10 +564,12 @@ public class RequestMappingHandlerAdapter extends AbstractHandlerMethodAdapter
 
 
 	@Override
-	public void afterPropertiesSet() {
+	public void afterPropertiesSet() {  // 初始化之后执行
 		// Do this first, it may add ResponseBody advice beans
+		// ControllerAdvice 跟异常处理有关
 		initControllerAdviceCache();
 
+		// 拿到底层所有的 argumentResolvers，把这些resolver统一组合到一个对象里面，方便管控
 		if (this.argumentResolvers == null) {
 			List<HandlerMethodArgumentResolver> resolvers = getDefaultArgumentResolvers();
 			this.argumentResolvers = new HandlerMethodArgumentResolverComposite().addResolvers(resolvers);
@@ -790,16 +792,20 @@ public class RequestMappingHandlerAdapter extends AbstractHandlerMethodAdapter
 		checkRequest(request);
 
 		// Execute invokeHandlerMethod in synchronized block if required.
+		// 会话锁，每一个用户和服务器交互无论发了多少请求都只有一个会话
+		// 限制用户的线程
 		if (this.synchronizeOnSession) {
 			HttpSession session = request.getSession(false);
 			if (session != null) {
 				Object mutex = WebUtils.getSessionMutex(session);
+				// 高并发可以限制一个用户一次进来一个请求
 				synchronized (mutex) {
 					mav = invokeHandlerMethod(request, response, handlerMethod);
 				}
 			}
 			else {
 				// No HttpSession available -> no mutex necessary
+				// todo 执行目标方法
 				mav = invokeHandlerMethod(request, response, handlerMethod);
 			}
 		}
@@ -852,26 +858,34 @@ public class RequestMappingHandlerAdapter extends AbstractHandlerMethodAdapter
 	protected ModelAndView invokeHandlerMethod(HttpServletRequest request,
 			HttpServletResponse response, HandlerMethod handlerMethod) throws Exception {
 
+		// 装饰器模式，把原生的request, response 封装到一个对象中 方便后续只用这一个参数就可以
 		ServletWebRequest webRequest = new ServletWebRequest(request, response);
 		try {
+			// 数据绑定器
 			WebDataBinderFactory binderFactory = getDataBinderFactory(handlerMethod);
+			// 获取到模型工厂 Model(要交给页面的数据)  View（我们要去的视图）
 			ModelFactory modelFactory = getModelFactory(handlerMethod, binderFactory);
-
+			// 将 handlerMethod 转换成 ServletInvocableHandlerMethod
 			ServletInvocableHandlerMethod invocableMethod = createInvocableHandlerMethod(handlerMethod);
+			// 设置ServletInvocableHandlerMethod  的一些属性
+			// todo 参数解析器
 			if (this.argumentResolvers != null) {
 				invocableMethod.setHandlerMethodArgumentResolvers(this.argumentResolvers);
 			}
+			// todo 返回值解析器
 			if (this.returnValueHandlers != null) {
 				invocableMethod.setHandlerMethodReturnValueHandlers(this.returnValueHandlers);
 			}
 			invocableMethod.setDataBinderFactory(binderFactory);
 			invocableMethod.setParameterNameDiscoverer(this.parameterNameDiscoverer);
 
+			// 模型和视图的容器，以后流程共享ModelAndView数据的临时存储器
 			ModelAndViewContainer mavContainer = new ModelAndViewContainer();
 			mavContainer.addAllAttributes(RequestContextUtils.getInputFlashMap(request));
 			modelFactory.initModel(webRequest, mavContainer, invocableMethod);
 			mavContainer.setIgnoreDefaultModelOnRedirect(this.ignoreDefaultModelOnRedirect);
 
+			// 异步请求
 			AsyncWebRequest asyncWebRequest = WebAsyncUtils.createAsyncWebRequest(request, response);
 			asyncWebRequest.setTimeout(this.asyncRequestTimeout);
 
@@ -892,11 +906,13 @@ public class RequestMappingHandlerAdapter extends AbstractHandlerMethodAdapter
 				invocableMethod = invocableMethod.wrapConcurrentResult(result);
 			}
 
+			// todo 开始执行目标方法，反射调用HandlerMethod
 			invocableMethod.invokeAndHandle(webRequest, mavContainer);
 			if (asyncManager.isConcurrentHandlingStarted()) {
 				return null;
 			}
 
+			// todo 封装ModelAndView
 			return getModelAndView(mavContainer, modelFactory, webRequest);
 		}
 		finally {
@@ -1001,6 +1017,7 @@ public class RequestMappingHandlerAdapter extends AbstractHandlerMethodAdapter
 	private ModelAndView getModelAndView(ModelAndViewContainer mavContainer,
 			ModelFactory modelFactory, NativeWebRequest webRequest) throws Exception {
 
+		// modelFactory 准备模型数据，请求域数据共享，session里面的数据存储到请求域中
 		modelFactory.updateModel(webRequest, mavContainer);
 		if (mavContainer.isRequestHandled()) {
 			return null;
@@ -1014,6 +1031,7 @@ public class RequestMappingHandlerAdapter extends AbstractHandlerMethodAdapter
 			Map<String, ?> flashAttributes = ((RedirectAttributes) model).getFlashAttributes();
 			HttpServletRequest request = webRequest.getNativeRequest(HttpServletRequest.class);
 			if (request != null) {
+				// todo 重定向数据的共享 RedictView ,先把数据转移到request,再把request转移到session中
 				RequestContextUtils.getOutputFlashMap(request).putAll(flashAttributes);
 			}
 		}

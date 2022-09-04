@@ -39,7 +39,7 @@ import org.springframework.web.servlet.ModelAndView;
  */
 public class HttpRequestHandlerAdapter implements HandlerAdapter {
 
-	@Override
+	@Override  // 写一个HttpRequestHandler的实现也能处理请求
 	public boolean supports(Object handler) {
 		return (handler instanceof HttpRequestHandler);
 	}

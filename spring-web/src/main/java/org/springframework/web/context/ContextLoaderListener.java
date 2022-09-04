@@ -34,6 +34,7 @@ import javax.servlet.ServletContextListener;
  * @see #setContextInitializers
  * @see org.springframework.web.WebApplicationInitializer
  */
+// 在当前web应用启动以后（Tomcat把Web应用加载以后），调用contextInitialized方法
 public class ContextLoaderListener extends ContextLoader implements ServletContextListener {
 
 	/**
@@ -100,6 +101,7 @@ public class ContextLoaderListener extends ContextLoader implements ServletConte
 	 */
 	@Override
 	public void contextInitialized(ServletContextEvent event) {
+		// todo 初始化web-ios容器
 		initWebApplicationContext(event.getServletContext());
 	}
 

@@ -258,7 +258,10 @@ public class ContextLoader {
 	 * @see #CONTEXT_CLASS_PARAM
 	 * @see #CONFIG_LOCATION_PARAM
 	 */
+	// 初始化 webApplicationContext
 	public WebApplicationContext initWebApplicationContext(ServletContext servletContext) {
+		// 初始化完成的 webApplicationContext 会被保存到  servletContext 的属性中，key 为 ROOT_WEB_APPLICATION_CONTEXT_ATTRIBUTE
+		// 所以这里是判断是否已经初始化了webApplicationContext，就抛出异常(web.xml 中声明了多次ContextLoader 的定义)，不可重复初始化。
 		if (servletContext.getAttribute(WebApplicationContext.ROOT_WEB_APPLICATION_CONTEXT_ATTRIBUTE) != null) {
 			throw new IllegalStateException(
 					"Cannot initialize context because there is already a root application context present - " +
@@ -276,6 +279,7 @@ public class ContextLoader {
 			// Store context in local instance variable, to guarantee that
 			// it is available on ServletContext shutdown.
 			if (this.context == null) {
+				// todo 创建 WebApplicationContext
 				this.context = createWebApplicationContext(servletContext);
 			}
 			if (this.context instanceof ConfigurableWebApplicationContext) {
@@ -289,11 +293,13 @@ public class ContextLoader {
 						ApplicationContext parent = loadParentContext(servletContext);
 						cwac.setParent(parent);
 					}
+					// todo 刷新上下文环境
 					configureAndRefreshWebApplicationContext(cwac, servletContext);
 				}
 			}
+			//  将创建好的 WebApplicationContext 保存到 servletContext 中
 			servletContext.setAttribute(WebApplicationContext.ROOT_WEB_APPLICATION_CONTEXT_ATTRIBUTE, this.context);
-
+			// 映射当前的类加载器 与 创建的实例到全局变量 currentContextPerThread 中。
 			ClassLoader ccl = Thread.currentThread().getContextClassLoader();
 			if (ccl == ContextLoader.class.getClassLoader()) {
 				currentContext = this.context;
@@ -328,7 +334,9 @@ public class ContextLoader {
 	 * @return the root WebApplicationContext
 	 * @see ConfigurableWebApplicationContext
 	 */
+	// 创建 webApplicationContext
 	protected WebApplicationContext createWebApplicationContext(ServletContext sc) {
+		// todo
 		Class<?> contextClass = determineContextClass(sc);
 		if (!ConfigurableWebApplicationContext.class.isAssignableFrom(contextClass)) {
 			throw new ApplicationContextException("Custom context class [" + contextClass.getName() +
@@ -346,6 +354,7 @@ public class ContextLoader {
 	 * @see org.springframework.web.context.support.XmlWebApplicationContext
 	 */
 	protected Class<?> determineContextClass(ServletContext servletContext) {
+		// 这里获取 contextClassName。默认情况下没有配置则为null。我们自然是没有配置，所以这里为null
 		String contextClassName = servletContext.getInitParameter(CONTEXT_CLASS_PARAM);
 		if (contextClassName != null) {
 			try {
@@ -357,8 +366,10 @@ public class ContextLoader {
 			}
 		}
 		else {
+			// 默认策略获取  contextClassName 。通过上面的静态代码块我们可以知道defaultStrategies 读取的是 ContextLoader.properties 文件中的内容
 			contextClassName = defaultStrategies.getProperty(WebApplicationContext.class.getName());
 			try {
+				// 通过反射获取到实例
 				return ClassUtils.forName(contextClassName, ContextLoader.class.getClassLoader());
 			}
 			catch (ClassNotFoundException ex) {
@@ -398,6 +409,7 @@ public class ContextLoader {
 		}
 
 		customizeContext(sc, wac);
+		// todo  刷新容器
 		wac.refresh();
 	}
 
