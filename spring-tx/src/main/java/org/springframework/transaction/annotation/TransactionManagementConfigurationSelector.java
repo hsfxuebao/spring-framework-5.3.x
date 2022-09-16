@@ -45,6 +45,7 @@ public class TransactionManagementConfigurationSelector extends AdviceModeImport
 	 */
 	@Override
 	protected String[] selectImports(AdviceMode adviceMode) {
+		// 默认值 是 PROXY。个人猜测是通过 代理模式实现事务，如果是 ASPECTJ 则是通过 ASPECTJ的方式实现，AspectJ 需要单独引入编译
 		switch (adviceMode) {
 			case PROXY:
 				return new String[] {AutoProxyRegistrar.class.getName(),

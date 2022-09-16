@@ -268,6 +268,8 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 		// 正常来说Aop 的代理创建应当在Bean 创建后再进行代理类，但是这里在Bean创建前就可能进行了代理：
 		// 对此，官方注释解释： 如果我们有自定义的TargetSource，请在此处创建代理。抑制目标Bean的不必要的默认实例化：TargetSource将以自定义方式处理目标实例。
 
+		// todo 在这里虽然会判断是否创建代理对象，但是对于AOP和事务在这里都不会创建代理对象，
+		//  都是在postProcessAfterInitialization中创建的代理对象
 		// 如果有切面的通知方法切入这个对象，就给这个对象创建代理
 		TargetSource targetSource = getCustomTargetSource(beanClass, beanName);
 		if (targetSource != null) {

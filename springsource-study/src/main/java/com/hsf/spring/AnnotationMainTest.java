@@ -6,6 +6,8 @@ import com.hsf.spring.aop.HelloService;
 import com.hsf.spring.config.MainConfig;
 import com.hsf.spring.listener.DemoEvent;
 import com.hsf.spring.listener.MessageEvent;
+import com.hsf.spring.tx.TxConfig;
+import com.hsf.spring.tx.UserService;
 
 /**
  * @author hsfxuebao
@@ -17,12 +19,21 @@ public class AnnotationMainTest {
 	public static void main(String[] args) {
 
 		AnnotationConfigApplicationContext context =
-				new AnnotationConfigApplicationContext(MainConfig.class);
+				new AnnotationConfigApplicationContext(TxConfig.class);
+		// 事务
+		UserService userService = context.getBean(UserService.class);
+		// public 方法事务生效
+//		userService.insertUser();
+		userService.testTransactionValid();
 
-		//AOP,原理测试
-		HelloService helloService = context.getBean(HelloService.class);
-		helloService.sayHello("zhangsan");
 
+//		AnnotationConfigApplicationContext context =
+//				new AnnotationConfigApplicationContext(MainConfig.class);
+//		//AOP,原理测试
+//		HelloService helloService = context.getBean(HelloService.class);
+////		helloService.sayHello("zhangsan");
+//		helloService.sayHello2("zhangsan2");
+//		System.out.println();
 
 //		//测试事件监听器
 //		DemoEvent demoEvent = new DemoEvent("", "world");

@@ -103,6 +103,7 @@ public abstract class TransactionSynchronizationUtils {
 	 * @see TransactionSynchronization#beforeCompletion()
 	 */
 	public static void triggerBeforeCompletion() {
+		// 获取所有TransactionSynchronization 触发 beforeCompletion 方法
 		for (TransactionSynchronization synchronization : TransactionSynchronizationManager.getSynchronizations()) {
 			try {
 				synchronization.beforeCompletion();

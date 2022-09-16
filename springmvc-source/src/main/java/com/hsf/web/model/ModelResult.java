@@ -1,7 +1,7 @@
 package com.hsf.web.model;
 
 /**
- * @author haoshaofei <haoshaofei@kuaishou.com>
+ * @author hsfxuebao
  * Created on 2022-09-02
  */
 public class ModelResult {

@@ -17,4 +17,12 @@ public class HelloService {
 		int length = name.length();
 		return result + "---" + length;
 	}
+
+	public String sayHello2(String name){
+		String result = "你好2："+name;
+		System.out.println(result);
+		int length = name.length();
+		return result + "2---" + length;
+	}
+
 }

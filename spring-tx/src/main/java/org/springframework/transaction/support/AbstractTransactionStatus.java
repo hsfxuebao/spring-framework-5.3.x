@@ -145,12 +145,15 @@ public abstract class AbstractTransactionStatus implements TransactionStatus {
 	 * and release the savepoint right afterwards.
 	 */
 	public void rollbackToHeldSavepoint() throws TransactionException {
+		// 这里使用的是 JDBC 的方式进行数据库了连接， 返回的是 `JdbcTransactionObjectSupport`类型
 		Object savepoint = getSavepoint();
 		if (savepoint == null) {
 			throw new TransactionUsageException(
 					"Cannot roll back to savepoint - no savepoint associated with current transaction");
 		}
+		// 回滚到 savepoint
 		getSavepointManager().rollbackToSavepoint(savepoint);
+		// 释放保存点
 		getSavepointManager().releaseSavepoint(savepoint);
 		setSavepoint(null);
 	}
