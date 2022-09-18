@@ -230,30 +230,39 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 	}
 
 
+	//web应用上下文
 	@Nullable
 	private ApplicationContext applicationContext;
 
+	//servlet上下文
 	@Nullable
 	private ServletContext servletContext;
 
+	//拦截器
 	@Nullable
 	private List<Object> interceptors;
 
+	//路径匹配配置器
 	@Nullable
 	private PathMatchConfigurer pathMatchConfigurer;
 
+	//内容协商管理器
 	@Nullable
 	private ContentNegotiationManager contentNegotiationManager;
 
+	//参数解析器
 	@Nullable
 	private List<HandlerMethodArgumentResolver> argumentResolvers;
 
+	//返回值处理器
 	@Nullable
 	private List<HandlerMethodReturnValueHandler> returnValueHandlers;
 
+	//http消息转换器
 	@Nullable
 	private List<HttpMessageConverter<?>> messageConverters;
 
+	//跨域配置
 	@Nullable
 	private Map<String, CorsConfiguration> corsConfigurations;
 
@@ -308,33 +317,48 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 			@Qualifier("mvcConversionService") FormattingConversionService conversionService,
 			@Qualifier("mvcResourceUrlProvider") ResourceUrlProvider resourceUrlProvider) {
 
+		//创建一个RequestMappingHandlerMapping对象，就是简单的new一个
 		RequestMappingHandlerMapping mapping = createRequestMappingHandlerMapping();
+		//设置顺序，第一位
 		mapping.setOrder(0);
+		/**
+		 * getInterceptors()方法可以获取到用户注册和系统默认的所有拦截器对象
+		 * 然后将这些拦截器全部放入处理器映射器中
+		 */
 		mapping.setInterceptors(getInterceptors(conversionService, resourceUrlProvider));
+		//设置内容协商管理器
 		mapping.setContentNegotiationManager(contentNegotiationManager);
+		//获取用户注册的所有跨域配置
 		mapping.setCorsConfigurations(getCorsConfigurations());
 
+		//获取路径匹配配置器
 		PathMatchConfigurer pathConfig = getPathMatchConfigurer();
 		if (pathConfig.getPatternParser() != null) {
 			mapping.setPatternParser(pathConfig.getPatternParser());
 		}
 		else {
+			//获取路径匹配配置器中设置的UrlPathHelper,使用这个UrlPathHelper覆盖默认的UrlPathHelper
 			mapping.setUrlPathHelper(pathConfig.getUrlPathHelperOrDefault());
+			//获取在路径匹配配置器中配置的路径匹配器,覆盖默认的路径匹配器
 			mapping.setPathMatcher(pathConfig.getPathMatcherOrDefault());
 
+			//已经被废弃掉了不推荐使用，直接跳过
 			Boolean useSuffixPatternMatch = pathConfig.isUseSuffixPatternMatch();
 			if (useSuffixPatternMatch != null) {
 				mapping.setUseSuffixPatternMatch(useSuffixPatternMatch);
 			}
+			//已经被废弃掉了不推荐使用，直接跳过
 			Boolean useRegisteredSuffixPatternMatch = pathConfig.isUseRegisteredSuffixPatternMatch();
 			if (useRegisteredSuffixPatternMatch != null) {
 				mapping.setUseRegisteredSuffixPatternMatch(useRegisteredSuffixPatternMatch);
 			}
 		}
+		//是否使用尾斜杠匹配
 		Boolean useTrailingSlashMatch = pathConfig.isUseTrailingSlashMatch();
 		if (useTrailingSlashMatch != null) {
 			mapping.setUseTrailingSlashMatch(useTrailingSlashMatch);
 		}
+		//获取配置所有路径前缀
 		if (pathConfig.getPathPrefixes() != null) {
 			mapping.setPathPrefixes(pathConfig.getPathPrefixes());
 		}
@@ -361,10 +385,22 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 			ResourceUrlProvider mvcResourceUrlProvider) {
 
 		if (this.interceptors == null) {
+			//拦截器注册中心
 			InterceptorRegistry registry = new InterceptorRegistry();
+			/**
+			 * 该方法被子类重写，会以这个拦截器注册中心为参数调用所有配置类对象中
+			 * addInterceptors(registry)方法，用户通过这个注册中心注册拦截器对象。
+			 * 很明显，此处调用addInterceptors(registry)方法，
+			 * 就会带着WebMvcConfigurerComposite中所有的配置类对象都调用一次
+			 * addInterceptors(registry)方法，将配置类中配置的拦截器注册到拦截器注册中心
+			 * 这个注册中心会将所有类型的拦截器统一适配为InterceptorRegistration类型，方便管理
+			 */
 			addInterceptors(registry);
+			//这个拦截器将FormattingConversionService保存到请求域中
 			registry.addInterceptor(new ConversionServiceExposingInterceptor(mvcConversionService));
+			//这个拦截器将ResourceUrlProvider保存到请求域中
 			registry.addInterceptor(new ResourceUrlProviderExposingInterceptor(mvcResourceUrlProvider));
+			//获取注册中心中所有的拦截器，会先排序，再返回
 			this.interceptors = registry.getInterceptors();
 		}
 		return this.interceptors.toArray();
@@ -385,7 +421,16 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 	 */
 	protected PathMatchConfigurer getPathMatchConfigurer() {
 		if (this.pathMatchConfigurer == null) {
+			//新建一个路径匹配配置器
 			this.pathMatchConfigurer = new PathMatchConfigurer();
+			/**
+			 * 又是同样的方式，会以这个路径匹配配置器为参数调用所有配置类对象中
+			 * configurePathMatch(pathMatchConfigurer)方法，用户通过这个配置器注册路径匹配器。
+			 * 很明显，此处调用configurePathMatch(pathMatchConfigurer)方法，
+			 * 就会带着WebMvcConfigurerComposite中所有的配置类对象都调用一次
+			 * configurePathMatch(pathMatchConfigurer)方法，将配置类中配置的路径匹配器
+			 * 注册到配置器中
+			 */
 			configurePathMatch(this.pathMatchConfigurer);
 		}
 		return this.pathMatchConfigurer;
@@ -408,6 +453,11 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 	 */
 	@Bean
 	public PathPatternParser mvcPatternParser() {
+		/**
+		 * getPathMatchConfigurer()方法，获取路径匹配配置器，见3.3.3.4
+		 * 然后得到这个配置器中的路径匹配器，把它放入容器中
+		 * 如果用户未配置，则使用默认的AntPathMatcher
+		 */
 		return getPathMatchConfigurer().getPatternParserOrDefault();
 	}
 
@@ -421,6 +471,11 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 	 */
 	@Bean
 	public UrlPathHelper mvcUrlPathHelper() {
+		/**
+		 * getPathMatchConfigurer()方法，获取路径匹配配置器，见3.3.3.4
+		 * 然后得到这个配置器中的UrlPathHelper，把它放入容器中
+		 * 如果用户未配置，则使用默认的UrlPathHelper
+		 */
 		return getPathMatchConfigurer().getUrlPathHelperOrDefault();
 	}
 
@@ -444,9 +499,20 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 	@Bean
 	public ContentNegotiationManager mvcContentNegotiationManager() {
 		if (this.contentNegotiationManager == null) {
+			//创建一个内容协商配置器
 			ContentNegotiationConfigurer configurer = new ContentNegotiationConfigurer(this.servletContext);
+			// todo 将服务器默认能生产的媒体类型保存到内容协商配置器
 			configurer.mediaTypes(getDefaultMediaTypes());
+			/**
+			 * 和上面拦截器一样，会以这个内容协商配置器为参数调用所有配置类对象中
+			 * configureContentNegotiation(configurer)方法，用户通过这个配置器注册和
+			 * 修改内容协商管理器。很明显，此处调用configureContentNegotiation(configurer)方法，
+			 * 就会带着WebMvcConfigurerComposite中所有的配置类对象都调用一次
+			 * configureContentNegotiation(configurer)方法，
+			 * 将配置类中配置的内容协商管理器注册到配置器中
+			 */
 			configureContentNegotiation(configurer);
+			//根据这个配置器的配置创建一个内容协商管理器
 			this.contentNegotiationManager = configurer.buildContentNegotiationManager();
 		}
 		return this.contentNegotiationManager;
@@ -454,6 +520,7 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 
 	protected Map<String, MediaType> getDefaultMediaTypes() {
 		Map<String, MediaType> map = new HashMap<>(4);
+		// 根据标志量，来得到服务器能够生产的媒体类型
 		if (romePresent) {
 			map.put("atom", MediaType.APPLICATION_ATOM_XML);
 			map.put("rss", MediaType.APPLICATION_RSS_XML);
@@ -461,6 +528,7 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 		if (!shouldIgnoreXml && (jaxb2Present || jackson2XmlPresent)) {
 			map.put("xml", MediaType.APPLICATION_XML);
 		}
+		//导了jackson包就能生产xml，json
 		if (jackson2Present || gsonPresent || jsonbPresent) {
 			map.put("json", MediaType.APPLICATION_JSON);
 		}
@@ -491,9 +559,17 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 			@Qualifier("mvcConversionService") FormattingConversionService conversionService,
 			@Qualifier("mvcResourceUrlProvider") ResourceUrlProvider resourceUrlProvider) {
 
+		//视图控制注册中心
 		ViewControllerRegistry registry = new ViewControllerRegistry(this.applicationContext);
+		/**
+		 * addViewControllers(registry)这个方法我们应该不陌生，我们经常在配置类中重写该方法，
+		 * 注册路径->视图的映射关系。
+		 * 此处调用addViewControllers(registry)方法，
+		 * 就会带着WebMvcConfigurerComposite中所有的配置类对象都调用一次
+		 * addViewControllers(registry)方法，注册路径->视图的映射关系
+		 */
 		addViewControllers(registry);
-
+		//真实类型为SimpleUrlHandlerMapping
 		AbstractHandlerMapping handlerMapping = registry.buildHandlerMapping();
 		if (handlerMapping == null) {
 			return null;
@@ -506,7 +582,9 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 			handlerMapping.setUrlPathHelper(pathConfig.getUrlPathHelperOrDefault());
 			handlerMapping.setPathMatcher(pathConfig.getPathMatcherOrDefault());
 		}
+		//将所有的拦截器设置进去
 		handlerMapping.setInterceptors(getInterceptors(conversionService, resourceUrlProvider));
+		//跨域配置
 		handlerMapping.setCorsConfigurations(getCorsConfigurations());
 		return handlerMapping;
 	}
@@ -591,15 +669,25 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 		Assert.state(this.servletContext != null, "No ServletContext set");
 
 		PathMatchConfigurer pathConfig = getPathMatchConfigurer();
-
+		//创建资源处理器注册中心
 		ResourceHandlerRegistry registry = new ResourceHandlerRegistry(this.applicationContext,
 				this.servletContext, contentNegotiationManager, pathConfig.getUrlPathHelper());
+		/**
+		 * 会以这个资源处理器注册中心为参数调用所有配置类对象中
+		 * addResourceHandlers(registry)方法，用户通过这个资源处理器注册中心设置静态资源的
+		 * 路径，静态资源位置，静态资源缓存时间等等。
+		 * 很明显，此处调用addResourceHandlers(registry)方法，
+		 * 就会带着WebMvcConfigurerComposite中所有的配置类对象都调用一次
+		 * addResourceHandlers(registry)方法，将配置类中静态资源的配置保存到资源处理器注册中心中
+		 */
 		addResourceHandlers(registry);
 
+		//通过资源处理器注册中心创建处理静态资源的SimpleUrlHandlerMapping
 		AbstractHandlerMapping handlerMapping = registry.getHandlerMapping();
 		if (handlerMapping == null) {
 			return null;
 		}
+		//设置其它的一些配置，这些我们都见过
 		if (pathConfig.getPatternParser() != null) {
 			handlerMapping.setPatternParser(pathConfig.getPatternParser());
 		}
@@ -626,7 +714,9 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 	@Bean
 	public ResourceUrlProvider mvcResourceUrlProvider() {
 		ResourceUrlProvider urlProvider = new ResourceUrlProvider();
+		//获取用户在路径匹配配置器配置的UrlPathHelper
 		urlProvider.setUrlPathHelper(getPathMatchConfigurer().getUrlPathHelperOrDefault());
+		//获取用户在路径匹配配置器配置的PathMatcher
 		urlProvider.setPathMatcher(getPathMatchConfigurer().getPathMatcherOrDefault());
 		return urlProvider;
 	}
@@ -640,8 +730,18 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 	@Nullable
 	public HandlerMapping defaultServletHandlerMapping() {
 		Assert.state(this.servletContext != null, "No ServletContext set");
+		//默认Servlet处理配置器
 		DefaultServletHandlerConfigurer configurer = new DefaultServletHandlerConfigurer(this.servletContext);
+		/**
+		 * 会以这个默认Servlet处理的配置器为参数调用所有配置类对象中
+		 * configureDefaultServletHandling(configurer)方法，用户通过这个配置器启用Tomcat容器
+		 * 默认的Servlet，将静态资源请求转发给这个默认的Servlet处理。
+		 * 很明显，此处调用configureDefaultServletHandling(configurer)方法，
+		 * 就会带着WebMvcConfigurerComposite中所有的配置类对象都调用一次
+		 * configureDefaultServletHandling(configurer)方法，启用Tomcat容器默认的Servlet
+		 */
 		configureDefaultServletHandling(configurer);
+		//应用用户配置构建一个SimpleUrlHandlerMapping
 		return configurer.buildHandlerMapping();
 	}
 
@@ -668,25 +768,53 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 			@Qualifier("mvcConversionService") FormattingConversionService conversionService,
 			@Qualifier("mvcValidator") Validator validator) {
 
+		//创建一个RequestMappingHandlerAdapter对象
 		RequestMappingHandlerAdapter adapter = createRequestMappingHandlerAdapter();
+
 		adapter.setContentNegotiationManager(contentNegotiationManager);
+		/**
+		 * getMessageConverters()方法，获取所有的消息转换器，见3.3.13.2
+		 * 并将这些消息转换器设置到处理器适配器中
+		 */
 		adapter.setMessageConverters(getMessageConverters());
+		/**
+		 * getConfigurableWebBindingInitializer()方法，获取数据绑定器的初始化器，见3.3.13.3
+		 * 并将这个初始化器设置到处理器适配器中
+		 */
 		adapter.setWebBindingInitializer(getConfigurableWebBindingInitializer(conversionService, validator));
+		/**
+		 * getArgumentResolvers()方法，获取所有用户自定义的参数解析器，见3.3.13.4
+		 * 并设置到处理器适配器中
+		 */
 		adapter.setCustomArgumentResolvers(getArgumentResolvers());
+		/**
+		 * getReturnValueHandlers()方法，获取所有用户自定义的返回值处理器，见3.3.13.5
+		 * 并设置到处理器适配器中
+		 */
 		adapter.setCustomReturnValueHandlers(getReturnValueHandlers());
 
+		/**
+		 * 导入了jackson包，就放入两个通知
+		 * 这两个通知分别会在@RequestBody注解参数类型转换前后执行
+		 * @ResponseBody注解方法返回值写入响应前后执行
+		 */
 		if (jackson2Present) {
 			adapter.setRequestBodyAdvice(Collections.singletonList(new JsonViewRequestBodyAdvice()));
 			adapter.setResponseBodyAdvice(Collections.singletonList(new JsonViewResponseBodyAdvice()));
 		}
 
+		/*****************************异步支持的相关配置***********************************/
+		// todo 异步支持配置器
 		AsyncSupportConfigurer configurer = getAsyncSupportConfigurer();
 		if (configurer.getTaskExecutor() != null) {
+			//异步执行器，实际上就是线程池，异步完成处理器调用
 			adapter.setTaskExecutor(configurer.getTaskExecutor());
 		}
 		if (configurer.getTimeout() != null) {
+			//异步执行的超时时间
 			adapter.setAsyncRequestTimeout(configurer.getTimeout());
 		}
+		//异步支持的拦截器
 		adapter.setCallableInterceptors(configurer.getCallableInterceptors());
 		adapter.setDeferredResultInterceptors(configurer.getDeferredResultInterceptors());
 
@@ -725,9 +853,18 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 	protected ConfigurableWebBindingInitializer getConfigurableWebBindingInitializer(
 			FormattingConversionService mvcConversionService, Validator mvcValidator) {
 
+		//直接new一个数据绑定器的初始化器
 		ConfigurableWebBindingInitializer initializer = new ConfigurableWebBindingInitializer();
+		//统一转换服务
 		initializer.setConversionService(mvcConversionService);
+		//校验器
 		initializer.setValidator(mvcValidator);
+		/**
+		 * 此处调用getMessageCodesResolver()方法，
+		 * 就会带着WebMvcConfigurerComposite中所有的配置类对象都调用一次
+		 * getMessageCodesResolver()方法，获取用户配置的消息解码器
+		 * 只允许一个配置类重写getMessageCodesResolver()方法返回一个消息解码器
+		 */
 		MessageCodesResolver messageCodesResolver = getMessageCodesResolver();
 		if (messageCodesResolver != null) {
 			initializer.setMessageCodesResolver(messageCodesResolver);
@@ -749,7 +886,14 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 	 */
 	@Bean
 	public FormattingConversionService mvcConversionService() {
+		//DefaultFormattingConversionService的构造方法会自动注册一些默认的格式化器，类型转换器
 		FormattingConversionService conversionService = new DefaultFormattingConversionService();
+		/**
+		 * 此处调用addFormatters(conversionService)方法，
+		 * 就会带着WebMvcConfigurerComposite中所有的配置类对象都调用一次
+		 * addFormatters(conversionService)方法，向这个格式转换服务中添加用户自定义的配置
+		 * 比如注册格式化器，类型转换器等
+		 */
 		addFormatters(conversionService);
 		return conversionService;
 	}
@@ -772,7 +916,17 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 	 */
 	@Bean
 	public Validator mvcValidator() {
+		/**
+		 * 此处调用getValidator()方法，
+		 * 就会带着WebMvcConfigurerComposite中所有的配置类对象都调用一次
+		 * getValidator()方法，获取用户配置的唯一的那一个Validator对象
+		 * 比如注册格式化器，类型转换器等
+		 */
 		Validator validator = getValidator();
+		/**
+		 * 用户未手动配置Validator，但是
+		 * 导入了Validator对应的包，于是自动使用反射实例化一个Validator对象
+		 */
 		if (validator == null) {
 			if (ClassUtils.isPresent("javax.validation.Validator", getClass().getClassLoader())) {
 				Class<?> clazz;
@@ -785,6 +939,7 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 				}
 				validator = (Validator) BeanUtils.instantiateClass(clazz);
 			}
+			//不校验的Validator
 			else {
 				validator = new NoOpValidator();
 			}
@@ -809,6 +964,11 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 	protected final List<HandlerMethodArgumentResolver> getArgumentResolvers() {
 		if (this.argumentResolvers == null) {
 			this.argumentResolvers = new ArrayList<>();
+			/**
+			 * 此处调用addArgumentResolvers(list)方法，
+			 * 就会带着WebMvcConfigurerComposite中所有的配置类对象都调用一次
+			 * addArgumentResolvers(list)方法，向这个集合中添加用户自定义的参数解析器
+			 */
 			addArgumentResolvers(this.argumentResolvers);
 		}
 		return this.argumentResolvers;
@@ -835,6 +995,11 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 	protected final List<HandlerMethodReturnValueHandler> getReturnValueHandlers() {
 		if (this.returnValueHandlers == null) {
 			this.returnValueHandlers = new ArrayList<>();
+			/**
+			 * 此处调用addReturnValueHandlers(list)方法，
+			 * 就会带着WebMvcConfigurerComposite中所有的配置类对象都调用一次
+			 * addReturnValueHandlers(list)方法，向这个集合中添加用户自定义的返回值处理器
+			 */
 			addReturnValueHandlers(this.returnValueHandlers);
 		}
 		return this.returnValueHandlers;
@@ -862,10 +1027,23 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 	protected final List<HttpMessageConverter<?>> getMessageConverters() {
 		if (this.messageConverters == null) {
 			this.messageConverters = new ArrayList<>();
+			/**
+			 * 此处调用configureMessageConverters(list)方法，
+			 * 就会带着WebMvcConfigurerComposite中所有的配置类对象都调用一次
+			 * configureMessageConverters(list)方法，向这个集合中添加消息转换器
+			 * 通过此方法添加消息转换器，springmvc容器就不会注册默认的消息转换器了
+			 */
 			configureMessageConverters(this.messageConverters);
 			if (this.messageConverters.isEmpty()) {
+				// todo 添加默认的消息转换器
 				addDefaultHttpMessageConverters(this.messageConverters);
 			}
+			/**
+			 * 此处调用extendMessageConverters(list)方法，
+			 * 就会带着WebMvcConfigurerComposite中所有的配置类对象都调用一次
+			 * extendMessageConverters(list)方法，向这个集合中添加消息转换器
+			 * 这个方法是在系统默认的转换器基础额外添加用户自定义的消息转换器
+			 */
 			extendMessageConverters(this.messageConverters);
 		}
 		return this.messageConverters;
@@ -972,6 +1150,11 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 	protected AsyncSupportConfigurer getAsyncSupportConfigurer() {
 		if (this.asyncSupportConfigurer == null) {
 			this.asyncSupportConfigurer = new AsyncSupportConfigurer();
+			/**
+			 * 此处调用configureAsyncSupport(configurer)方法，
+			 * 就会带着WebMvcConfigurerComposite中所有的配置类对象都调用一次
+			 * configureAsyncSupport(configurer)方法，向这个异步支持配置器中添加用户自定义的配置
+			 */
 			configureAsyncSupport(this.asyncSupportConfigurer);
 		}
 		return this.asyncSupportConfigurer;
@@ -1026,12 +1209,28 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 	@Bean
 	public HandlerExceptionResolver handlerExceptionResolver(
 			@Qualifier("mvcContentNegotiationManager") ContentNegotiationManager contentNegotiationManager) {
+		//处理器异常解析器
 		List<HandlerExceptionResolver> exceptionResolvers = new ArrayList<>();
+		/**
+		 * 此处调用configureHandlerExceptionResolvers(list)方法，
+		 * 就会带着WebMvcConfigurerComposite中所有的配置类对象都调用一次
+		 * configureHandlerExceptionResolvers(list)方法，向这个集合中添加用户自定义的
+		 * 处理器异常解析器。注意：通过此方法添加处理器异常解析器，springmvc容器就不会注册默认的
+		 * 处理器异常解析器了
+		 */
 		configureHandlerExceptionResolvers(exceptionResolvers);
 		if (exceptionResolvers.isEmpty()) {
+			// todo 添加默认的处理器异常解析器
 			addDefaultHandlerExceptionResolvers(exceptionResolvers, contentNegotiationManager);
 		}
+		/**
+		 * 此处调用extendHandlerExceptionResolvers(list)方法，
+		 * 就会带着WebMvcConfigurerComposite中所有的配置类对象都调用一次
+		 * extendHandlerExceptionResolvers(list)方法，向这个集合中添加处理器异常解析器
+		 * 这个方法是在系统默认的处理器异常解析器基础额外添加用户自定义的处理器异常解析器
+		 */
 		extendHandlerExceptionResolvers(exceptionResolvers);
+		//组合模式，多个处理器异常解析器完成解析功能
 		HandlerExceptionResolverComposite composite = new HandlerExceptionResolverComposite();
 		composite.setOrder(0);
 		composite.setExceptionResolvers(exceptionResolvers);
@@ -1075,6 +1274,7 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 	protected final void addDefaultHandlerExceptionResolvers(List<HandlerExceptionResolver> exceptionResolvers,
 			ContentNegotiationManager mvcContentNegotiationManager) {
 
+		//创建一个使用@ExceptionHandler注解方法处理异常的异常解析器
 		ExceptionHandlerExceptionResolver exceptionHandlerResolver = createExceptionHandlerExceptionResolver();
 		exceptionHandlerResolver.setContentNegotiationManager(mvcContentNegotiationManager);
 		exceptionHandlerResolver.setMessageConverters(getMessageConverters());
@@ -1121,18 +1321,29 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 	@Bean
 	public ViewResolver mvcViewResolver(
 			@Qualifier("mvcContentNegotiationManager") ContentNegotiationManager contentNegotiationManager) {
+		//视图解析器注册中心
 		ViewResolverRegistry registry =
 				new ViewResolverRegistry(contentNegotiationManager, this.applicationContext);
+		/**
+		 * 此处调用configureViewResolvers(registry)方法，
+		 * 就会带着WebMvcConfigurerComposite中所有的配置类对象都调用一次
+		 * configureViewResolvers(registry)方法，向这个注册中心中添加用户自定义的
+		 * 视图解析器
+		 */
 		configureViewResolvers(registry);
 
+		//用户未在配置类中注册视图解析器
 		if (registry.getViewResolvers().isEmpty() && this.applicationContext != null) {
+			//获取容器中所有视图解析器的beanName
 			String[] names = BeanFactoryUtils.beanNamesForTypeIncludingAncestors(
 					this.applicationContext, ViewResolver.class, true, false);
-			if (names.length == 1) {
+			//只有一个，说明就是当前这个视图解析器mvcViewResolver
+			if (names.length == 1) { // 容器中只有1个视图解析器，会把InternalResourceViewResolver放到容器中
+				//添加一个默认的视图解析器InternalResourceViewResolver
 				registry.getViewResolvers().add(new InternalResourceViewResolver());
 			}
 		}
-
+		//组合模式，多个视图解析器先后解析一个视图，使用第一个能解析的视图解析器解析
 		ViewResolverComposite composite = new ViewResolverComposite();
 		composite.setOrder(registry.getOrder());
 		composite.setViewResolvers(registry.getViewResolvers());
@@ -1159,8 +1370,17 @@ public class WebMvcConfigurationSupport implements ApplicationContextAware, Serv
 	 */
 	protected final Map<String, CorsConfiguration> getCorsConfigurations() {
 		if (this.corsConfigurations == null) {
+			//跨域配置注册中心
 			CorsRegistry registry = new CorsRegistry();
+			/**
+			 * 和上面拦截器一样，会以这个跨域配置注册中心为参数调用所有配置类对象中
+			 * addCorsMappings(registry)方法，用户通过这个注册中心注册跨域配置。
+			 * 很明显，此处调用addCorsMappings(registry)方法，
+			 * 就会带着WebMvcConfigurerComposite中所有的配置类对象都调用一次
+			 * addCorsMappings(registry)方法，将配置类中配置的跨域配置注册到注册中心
+			 */
 			addCorsMappings(registry);
+			//得到注册中心的所有的跨域配置
 			this.corsConfigurations = registry.getCorsConfigurations();
 		}
 		return this.corsConfigurations;

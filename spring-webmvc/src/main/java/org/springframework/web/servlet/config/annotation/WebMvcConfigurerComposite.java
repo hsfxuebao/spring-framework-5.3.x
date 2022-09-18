@@ -37,6 +37,7 @@ import org.springframework.web.servlet.HandlerExceptionResolver;
  */
 class WebMvcConfigurerComposite implements WebMvcConfigurer {
 
+	//持有的配置类对象
 	private final List<WebMvcConfigurer> delegates = new ArrayList<>();
 
 
@@ -46,7 +47,7 @@ class WebMvcConfigurerComposite implements WebMvcConfigurer {
 		}
 	}
 
-
+	//添加一项配置的时候会将配置注册给所有的配置类对象
 	@Override
 	public void configurePathMatch(PathMatchConfigurer configurer) {
 		for (WebMvcConfigurer delegate : this.delegates) {
@@ -159,6 +160,11 @@ class WebMvcConfigurerComposite implements WebMvcConfigurer {
 		}
 	}
 
+	/**
+	 * 这个方法需要注意一下
+	 * Validator必须是唯一的，也就说，只允许一个配置重写该方法返回一个Validator
+	 * 有多个就会抛出异常
+	 */
 	@Override
 	public Validator getValidator() {
 		Validator selected = null;
@@ -175,6 +181,11 @@ class WebMvcConfigurerComposite implements WebMvcConfigurer {
 		return selected;
 	}
 
+	/**
+	 * 这个方法也需要注意一下
+	 * MessageCodesResolver必须是唯一的，也就说，
+	 * 只允许一个配置重写该方法返回一个MessageCodesResolver，有多个就会抛出异常
+	 */
 	@Override
 	@Nullable
 	public MessageCodesResolver getMessageCodesResolver() {

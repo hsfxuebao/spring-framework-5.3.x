@@ -42,9 +42,14 @@ import org.springframework.web.servlet.HandlerExceptionResolver;
 @Configuration(proxyBeanMethods = false)
 public class DelegatingWebMvcConfiguration extends WebMvcConfigurationSupport {
 
+	//组合模式，所有配置类组合
 	private final WebMvcConfigurerComposite configurers = new WebMvcConfigurerComposite();
 
-
+	/**
+	 * 此处添加了@Autowired(required = false)注解
+	 * 那么该方法在属性填充阶段就会被执行，其中方法参数来自于容器
+	 * 会自动从容器中找到类型匹配的bean，然后反射执行方法
+	 */
 	@Autowired(required = false)
 	public void setConfigurers(List<WebMvcConfigurer> configurers) {
 		if (!CollectionUtils.isEmpty(configurers)) {
@@ -53,6 +58,7 @@ public class DelegatingWebMvcConfiguration extends WebMvcConfigurationSupport {
 	}
 
 
+	// 向WebMvcConfigurerComposite的每一个配置类中添加配置
 	@Override
 	protected void configurePathMatch(PathMatchConfigurer configurer) {
 		this.configurers.configurePathMatch(configurer);
@@ -133,12 +139,14 @@ public class DelegatingWebMvcConfiguration extends WebMvcConfigurationSupport {
 		this.configurers.extendHandlerExceptionResolvers(exceptionResolvers);
 	}
 
+	//这个方法会获取配置类定义的唯一的Validator
 	@Override
 	@Nullable
 	protected Validator getValidator() {
 		return this.configurers.getValidator();
 	}
 
+	//这个方法会获取配置类定义的唯一的MessageCodesResolver
 	@Override
 	@Nullable
 	protected MessageCodesResolver getMessageCodesResolver() {
